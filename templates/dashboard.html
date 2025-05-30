@@ -9,59 +9,142 @@
     th, td { border: 1px solid #ccc; padding: 8px; }
     th { background-color: #f0f0f0; }
     section { margin-bottom: 60px; }
+    .action-btns button { margin-right: 5px; }
   </style>
 </head>
 <body>
 
 <h1>License Management Dashboard</h1>
 
-<section id="companies-section">
-  <h2>Companies</h2>
-  <table id="companies-table"></table>
-</section>
-
-<section id="operators-section">
-  <h2>Operators</h2>
-  <table id="operators-table"></table>
-</section>
-
-<section id="computers-section">
-  <h2>Computers</h2>
-  <table id="computers-table"></table>
-</section>
-
-<section id="softwares-section">
-  <h2>Softwares</h2>
-  <table id="softwares-table"></table>
-</section>
-
-<section id="licenses-section">
+<section>
   <h2>Licenses</h2>
   <table id="licenses-table"></table>
 </section>
 
-<script>
-async function loadTable(endpoint, tableId, extraFields = []) {
-  const res = await fetch(endpoint);
-  const data = await res.json();
-  const table = document.getElementById(tableId);
-  if (!data.length) {
-    table.innerHTML = "<tr><td>No data</td></tr>";
-    return;
-  }
+<!-- Edit Modal -->
+<div id="edit-modal" style="display:none; position:fixed; top:10%; left:30%; background:#fff; padding:20px; border:1px solid #ccc;">
+  <h3>Edit License</h3>
+  <form id="edit-form">
+    <label>Company:</label>
+    <select name="company_id" id="company-select"></select><br><br>
 
+    <label>Operator:</label>
+    <select name="operator_id" id="operator-select"></select><br><br>
+
+    <label>Computer:</label>
+    <select name="computer_id" id="computer-select"></select><br><br>
+
+    <label>Software:</label>
+    <select name="software_id" id="software-select"></select><br><br>
+
+    <label>Expire Date:</label>
+    <input type="date" name="expire_date" id="expire-date"><br><br>
+
+    <label>Paid:</label>
+    <input type="number" step="0.01" name="paid" id="paid"><br><br>
+
+    <label>Stayed:</label>
+    <input type="number" step="0.01" name="stayed" id="stayed"><br><br>
+
+    <label>Status:</label>
+    <input type="text" name="status" id="status"><br><br>
+
+    <label>License Status:</label>
+    <input type="text" name="license_status" id="license-status"><br><br>
+
+    <input type="hidden" id="license-id">
+    <button type="submit">Save</button>
+    <button type="button" onclick="hideModal()">Cancel</button>
+  </form>
+</div>
+
+<script>
+async function loadDropdowns() {
+  const res = await fetch("/licenses/dropdowns");
+  const { companies, operators, computers, softwares } = await res.json();
+
+  populateSelect("company-select", companies, "company_id", "company_name");
+  populateSelect("operator-select", operators, "operator_id", "operator_name");
+  populateSelect("computer-select", computers, "computer_id", "computer_guid");
+  populateSelect("software-select", softwares, "software_id", "software_name");
+}
+
+function populateSelect(id, list, valKey, labelKey) {
+  const select = document.getElementById(id);
+  select.innerHTML = list.map(item => `<option value="${item[valKey]}">${item[labelKey]}</option>`).join('');
+}
+
+function showModal(license) {
+  document.getElementById("license-id").value = license.license_id;
+  document.getElementById("company-select").value = license.company_id;
+  document.getElementById("operator-select").value = license.operator_id;
+  document.getElementById("computer-select").value = license.computer_id;
+  document.getElementById("software-select").value = license.software_id;
+  document.getElementById("expire-date").value = license.expire_date;
+  document.getElementById("paid").value = license.paid;
+  document.getElementById("stayed").value = license.stayed;
+  document.getElementById("status").value = license.status;
+  document.getElementById("license-status").value = license.license_status;
+
+  document.getElementById("edit-modal").style.display = "block";
+}
+
+function hideModal() {
+  document.getElementById("edit-modal").style.display = "none";
+}
+
+async function loadLicenses() {
+  const res = await fetch("/licenses/full");
+  const data = await res.json();
+  const table = document.getElementById("licenses-table");
   const keys = Object.keys(data[0]);
+
   table.innerHTML = `
-    <tr>${keys.map(k => `<th>${k}</th>`).join('')}</tr>
-    ${data.map(row => `<tr>${keys.map(k => `<td>${row[k]}</td>`).join('')}</tr>`).join('')}
+    <tr>${keys.map(k => `<th>${k}</th>`).join('')}<th>Actions</th></tr>
+    ${data.map(row => `
+      <tr>
+        ${keys.map(k => `<td>${row[k]}</td>`).join('')}
+        <td class="action-btns">
+          <button onclick='onEdit(${JSON.stringify(row).replace(/'/g, "\\'")})'>Edit</button>
+          <button onclick="onDelete(${row.license_id})">Delete</button>
+        </td>
+      </tr>
+    `).join('')}
   `;
 }
 
-loadTable("/companies", "companies-table");
-loadTable("/operators", "operators-table");
-loadTable("/computers", "computers-table");
-loadTable("/softwares", "softwares-table");
-loadTable("/licenses/full", "licenses-table");
+function onEdit(row) {
+  fetch(`/licenses/${row.license_id}`)
+    .then(res => res.json())
+    .then(fullData => {
+      showModal(fullData);
+    });
+}
+
+async function onDelete(id) {
+  if (confirm("Are you sure to delete license " + id + "?")) {
+    await fetch(`/licenses/${id}`, { method: "DELETE" });
+    loadLicenses();
+  }
+}
+
+document.getElementById("edit-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const id = document.getElementById("license-id").value;
+  const formData = new FormData(e.target);
+  const body = {};
+  formData.forEach((v, k) => body[k] = v);
+  await fetch(`/licenses/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  });
+  hideModal();
+  loadLicenses();
+});
+
+loadDropdowns();
+loadLicenses();
 </script>
 
 </body>

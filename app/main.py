@@ -187,6 +187,19 @@ def delete_software(software_id: int):
     return {"message": f"Software {software_id} deleted"}
 
 # Licenses
+@app.get("/licenses/{license_id}")
+def get_license_by_id(license_id: int):
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM licenses WHERE license_id = %s", (license_id,))
+    row = cur.fetchone()
+    if not row:
+        raise HTTPException(status_code=404, detail="License not found")
+    columns = [desc[0] for desc in cur.description]
+    cur.close()
+    conn.close()
+    return dict(zip(columns, row))
+
 
 @app.post("/licenses")
 def create_license(lic: License):
