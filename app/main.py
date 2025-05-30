@@ -215,3 +215,44 @@ def update_license(license_id: int, lic: License):
 def delete_license(license_id: int):
     delete("licenses", license_id, "license_id")
     return {"message": f"License {license_id} deleted"}
+@app.get("/licenses/full")
+def get_licenses_with_details():
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT 
+            l.license_id,
+            l.company_id,
+            l.operator_id,
+            l.computer_id,
+            l.software_id,
+            c.company_name,
+            o.operator_name,
+            comp.computer_guid,
+            s.software_name,
+            l.expire_date,
+            l.paid,
+            l.stayed,
+            l.status,
+            l.license_status
+        FROM licenses l
+        JOIN companies c ON l.company_id = c.company_id
+        JOIN operators o ON l.operator_id = o.operator_id
+        JOIN computers comp ON l.computer_id = comp.computer_id
+        JOIN softwares s ON l.software_id = s.software_id
+        ORDER BY l.license_id
+    """)
+    rows = cur.fetchall()
+    columns = [desc[0] for desc in cur.description]
+    cur.close()
+    conn.close()
+    return [dict(zip(columns, row)) for row in rows]
+
+@app.get("/licenses/dropdowns")
+def get_license_dropdowns():
+    return {
+        "companies": fetch_all("companies"),
+        "operators": fetch_all("operators"),
+        "computers": fetch_all("computers"),
+        "softwares": fetch_all("softwares")
+    }
