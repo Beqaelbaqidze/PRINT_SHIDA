@@ -9,72 +9,28 @@
     
 </body>
 <script>
-    // Add your JavaScript here
+function fetchData(url) {
     var xhr = new XMLHttpRequest();
-    xhr.open('GET', '/companies', true);
-    xhr.onreadystatechange = function() {
+    xhr.open('GET', url, true);
+    xhr.onreadystatechange = function () {
         if (xhr.readyState === 4) {
             if (xhr.status === 200) {
                 var data = JSON.parse(xhr.responseText);
-                console.log(data);
+                console.log(url, data);
                 // You can update the DOM here with the received data
             } else {
-                console.error('Error:', xhr.statusText);
+                console.error('Error fetching', url, xhr.statusText);
             }
         }
     };
     xhr.send();
-    xhr.open('GET', '/operators', true);
-    xhr.onreadystatechange = function() {
-        if (xhr.readyState === 4) {
-            if (xhr.status === 200) {
-                var data = JSON.parse(xhr.responseText);
-                console.log(data);
-                // You can update the DOM here with the received data
-            } else {
-                console.error('Error:', xhr.statusText);
-            }
-        }
-    };
-    xhr.send();
-    xhr.open('GET', '/computers', true);
-    xhr.onreadystatechange = function() {
-        if (xhr.readyState === 4) {
-            if (xhr.status === 200) {
-                var data = JSON.parse(xhr.responseText);
-                console.log(data);
-                // You can update the DOM here with the received data
-            } else {
-                console.error('Error:', xhr.statusText);
-            }
-        }
-    };
-    xhr.send();
-    xhr.open('GET', '/softwares', true);
-    xhr.onreadystatechange = function() {
-        if (xhr.readyState === 4) {
-            if (xhr.status === 200) {
-                var data = JSON.parse(xhr.responseText);
-                console.log(data);
-                // You can update the DOM here with the received data
-            } else {
-                console.error('Error:', xhr.statusText);
-            }
-        }
-    };
-    xhr.send();
-    xhr.open('GET', '/licenses', true);
-    xhr.onreadystatechange = function() {
-        if (xhr.readyState === 4) {
-            if (xhr.status === 200) {
-                var data = JSON.parse(xhr.responseText);
-                console.log(data);
-                // You can update the DOM here with the received data
-            } else {
-                console.error('Error:', xhr.statusText);
-            }
-        }
-    };
-    xhr.send();
+}
+
+fetchData('/companies');
+fetchData('/operators');
+fetchData('/computers');
+fetchData('/softwares');
+fetchData('/licenses');
 </script>
+
 </html>
