@@ -163,6 +163,46 @@ def delete(table: str, record_id: int, id_field: str):
     conn.commit()
     cur.close()
     conn.close()
+def filter_by(table: str, column: str, value: str):
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute(f"SELECT * FROM {table} WHERE {column} = %s", (value,))
+    rows = cur.fetchall()
+    columns = [desc[0] for desc in cur.description]
+    cur.close()
+    conn.close()
+    return [dict(zip(columns, row)) for row in rows]
+# === FILTER ENDPOINTS ===
+@app.get("/companies/filter/{company_name}")
+def filter_companies(company_name: str):
+    results = filter_by("companies", "company_name", company_name)
+    if not results:
+        raise HTTPException(status_code=404, detail="Company not found")
+    return results
+@app.get("/operators/filter/{operator_name}")
+def filter_operators(operator_name: str):
+    results = filter_by("operators", "operator_name", operator_name)
+    if not results:
+        raise HTTPException(status_code=404, detail="Operator not found")
+    return results
+@app.get("/computers/filter/{computer_guid}")
+def filter_computers(computer_guid: str):
+    results = filter_by("computers", "computer_guid", computer_guid)
+    if not results:
+        raise HTTPException(status_code=404, detail="Computer not found")
+    return results
+@app.get("/softwares/filter/{software_name}")
+def filter_softwares(software_name: str):
+    results = filter_by("softwares", "software_name", software_name)
+    if not results:
+        raise HTTPException(status_code=404, detail="Software not found")
+    return results
+@app.get("/licenses/filter/{license_id}")
+def filter_licenses(license_id: int):
+    results = filter_by("licenses", "license_id", license_id)
+    if not results:
+        raise HTTPException(status_code=404, detail="License not found")
+    return results
 
 # === GET ENDPOINTS ===
 @app.get("/companies")
