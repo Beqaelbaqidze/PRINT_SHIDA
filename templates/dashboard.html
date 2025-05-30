@@ -2,13 +2,23 @@
 <html>
 <head>
   <title>Admin Dashboard</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jsgrid@1.5.3/dist/jsgrid.min.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jsgrid@1.5.3/dist/jsgrid-theme.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jsgrid@1.5.3/dist/jsgrid.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jsgrid@1.5.3/dist/jsgrid-theme.min.css" />
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; background: #f7f7f7; }
-    h2 { margin-top: 40px; }
-    .grid-container { margin-bottom: 60px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 6px rgba(0,0,0,0.1); }
-    .jsgrid { font-size: 14px; }
+    body {
+      font-family: Arial, sans-serif;
+      background: #f9f9f9;
+      padding: 40px;
+    }
+    h1 { margin-bottom: 30px; }
+    h2 { margin-top: 60px; }
+    .grid-container {
+      background: white;
+      padding: 20px;
+      margin-bottom: 40px;
+      border-radius: 8px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+    }
   </style>
 </head>
 <body>
@@ -55,59 +65,99 @@
         pageSize: 10,
         controller: {
           loadData: () => fetch(url).then(res => res.json()),
-          updateItem: item =>
-            fetch(url, {
+          updateItem: (item) => {
+            return fetch(url, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify(item)
-            }).then(res => res.json())
+            }).then(res => res.json());
+          }
         },
         fields: [...fields, { type: "control" }]
       });
     }
 
-    // === GRID CONFIGS ===
+    function loadAllGrids() {
+      createGrid("companiesGrid", "/companies", [
+        { name: "company_id", type: "number", width: 30, editing: false },
+        { name: "company_name", type: "text", width: 100 },
+        { name: "company_number", type: "text", width: 60 },
+        { name: "company_director", type: "text", width: 100 },
+        { name: "company_phone_number", type: "text", width: 100 },
+        { name: "company_email", type: "text", width: 120 },
+        { name: "company_address", type: "text", width: 120 }
+      ]);
 
-    createGrid("companiesGrid", "/companies", [
-      { name: "company_id", type: "number", width: 30, editing: false },
-      { name: "company_name", type: "text", width: 100 },
-      { name: "company_number", type: "text", width: 50 },
-      { name: "company_director", type: "text", width: 100 },
-      { name: "company_phone_number", type: "text", width: 80 },
-      { name: "company_email", type: "text", width: 100 },
-      { name: "company_address", type: "text", width: 100 }
-    ]);
+      createGrid("operatorsGrid", "/operators", [
+        { name: "operator_id", type: "number", width: 30, editing: false },
+        { name: "operator_name", type: "text", width: 100 },
+        { name: "identify_id", type: "text", width: 100 }
+      ]);
 
-    createGrid("operatorsGrid", "/operators", [
-      { name: "operator_id", type: "number", width: 30, editing: false },
-      { name: "operator_name", type: "text", width: 100 },
-      { name: "identify_id", type: "text", width: 100 }
-    ]);
+      createGrid("computersGrid", "/computers", [
+        { name: "computer_id", type: "number", width: 30, editing: false },
+        { name: "computer_guid", type: "text", width: 150 },
+        { name: "computer_mac_address", type: "text", width: 150 }
+      ]);
 
-    createGrid("computersGrid", "/computers", [
-      { name: "computer_id", type: "number", width: 30, editing: false },
-      { name: "computer_guid", type: "text", width: 120 },
-      { name: "computer_mac_address", type: "text", width: 120 }
-    ]);
+      createGrid("softwaresGrid", "/softwares", [
+        { name: "software_id", type: "number", width: 30, editing: false },
+        { name: "software_name", type: "text", width: 100 },
+        { name: "price", type: "number", width: 60 }
+      ]);
+    }
 
-    createGrid("softwaresGrid", "/softwares", [
-      { name: "software_id", type: "number", width: 30, editing: false },
-      { name: "software_name", type: "text", width: 100 },
-      { name: "price", type: "number", width: 60 }
-    ]);
+    // === Load FK Dropdowns for Licenses ===
+    let companies = [], operators = [], computers = [], softwares = [];
 
-    createGrid("licensesGrid", "/licenses", [
-      { name: "license_id", type: "number", width: 30, editing: false },
-      { name: "company_id", type: "number", width: 50 },
-      { name: "operator_id", type: "number", width: 50 },
-      { name: "computer_id", type: "number", width: 50 },
-      { name: "software_id", type: "number", width: 50 },
-      { name: "expire_date", type: "text", width: 80 },
-      { name: "paid", type: "number", width: 50 },
-      { name: "stayed", type: "number", width: 50 },
-      { name: "status", type: "text", width: 60 },
-      { name: "license_status", type: "text", width: 80 }
-    ]);
+    async function loadLicenseFKsAndCreateGrid() {
+      [companies, operators, computers, softwares] = await Promise.all([
+        fetch("/companies").then(r => r.json()),
+        fetch("/operators").then(r => r.json()),
+        fetch("/computers").then(r => r.json()),
+        fetch("/softwares").then(r => r.json())
+      ]);
+
+      $("#licensesGrid").jsGrid({
+        width: "100%",
+        height: "auto",
+        editing: true,
+        sorting: true,
+        paging: true,
+        autoload: true,
+        pageSize: 10,
+        controller: {
+          loadData: () => fetch("/licenses").then(res => res.json()),
+          updateItem: (item) => {
+            return fetch("/licenses", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(item)
+            })
+            .then(res => res.json())
+            .then(() => $("#licensesGrid").jsGrid("loadData")); // Auto-refresh grid
+          }
+        },
+        fields: [
+          { name: "license_id", type: "number", width: 30, editing: false },
+          { name: "company_id", type: "select", title: "Company", items: companies, valueField: "company_id", textField: "company_name", width: 100 },
+          { name: "operator_id", type: "select", title: "Operator", items: operators, valueField: "operator_id", textField: "operator_name", width: 100 },
+          { name: "computer_id", type: "select", title: "Computer", items: computers, valueField: "computer_id", textField: "computer_guid", width: 150 },
+          { name: "software_id", type: "select", title: "Software", items: softwares, valueField: "software_id", textField: "software_name", width: 100 },
+          { name: "expire_date", type: "text", width: 80 },
+          { name: "paid", type: "number", width: 60 },
+          { name: "stayed", type: "number", width: 60 },
+          { name: "status", type: "text", width: 70 },
+          { name: "license_status", type: "text", width: 100 },
+          { type: "control" }
+        ]
+      });
+    }
+
+    // Load all data
+    loadAllGrids();
+    loadLicenseFKsAndCreateGrid();
   </script>
+
 </body>
 </html>
