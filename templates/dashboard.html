@@ -18,6 +18,10 @@
     table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
     th, td { padding: 8px; border: 1px solid #ccc; }
     th { background: #f2f2f2; }
+    .form-area { margin-bottom: 20px; padding: 10px; background: #f9f9f9; border: 1px solid #ccc; }
+    .form-area input, .form-area select { margin: 5px 0; padding: 5px; width: 200px; }
+    .modal { display:none; position:fixed; top:10%; left:30%; background:#fff; padding:20px; border:1px solid #ccc; z-index:1000; }
+    .modal input, .modal select { display: block; margin: 5px 0; padding: 5px; width: 100%; }
   </style>
 </head>
 <body>
@@ -32,13 +36,78 @@
   <button onclick="openTab('licenses')">Licenses</button>
 </div>
 
-<div id="companies" class="tab-content active"><h2>Companies</h2><table id="companies-table"></table></div>
-<div id="operators" class="tab-content"><h2>Operators</h2><table id="operators-table"></table></div>
-<div id="computers" class="tab-content"><h2>Computers</h2><table id="computers-table"></table></div>
-<div id="softwares" class="tab-content"><h2>Softwares</h2><table id="softwares-table"></table></div>
-<div id="licenses" class="tab-content"><h2>Licenses</h2><table id="licenses-table"></table></div>
+<div id="companies" class="tab-content active">
+  <h2>Companies</h2>
+  <div class="form-area">
+    <input id="company_name" placeholder="Company Name">
+    <input id="company_number" placeholder="Number">
+    <input id="company_director" placeholder="Director">
+    <input id="company_phone_number" placeholder="Phone">
+    <input id="company_email" placeholder="Email">
+    <input id="company_address" placeholder="Address">
+    <button onclick="addCompany()">Add</button>
+  </div>
+  <table id="companies-table"></table>
+</div>
+
+<div id="operators" class="tab-content">
+  <h2>Operators</h2>
+  <div class="form-area">
+    <input id="operator_name" placeholder="Operator Name">
+    <input id="identify_id" placeholder="Identify ID">
+    <button onclick="addOperator()">Add</button>
+  </div>
+  <table id="operators-table"></table>
+</div>
+
+<div id="computers" class="tab-content">
+  <h2>Computers</h2>
+  <div class="form-area">
+    <input id="computer_guid" placeholder="GUID">
+    <input id="computer_mac_address" placeholder="MAC Address">
+    <button onclick="addComputer()">Add</button>
+  </div>
+  <table id="computers-table"></table>
+</div>
+
+<div id="softwares" class="tab-content">
+  <h2>Softwares</h2>
+  <div class="form-area">
+    <input id="software_name" placeholder="Software Name">
+    <input id="price" placeholder="Price" type="number" step="0.01">
+    <button onclick="addSoftware()">Add</button>
+  </div>
+  <table id="softwares-table"></table>
+</div>
+
+<div id="licenses" class="tab-content">
+  <h2>Licenses</h2>
+  <div class="form-area">
+    <select id="l_company"></select>
+    <select id="l_operator"></select>
+    <select id="l_computer"></select>
+    <select id="l_software"></select>
+    <input id="l_expire" type="date">
+    <input id="l_paid" placeholder="Paid" type="number">
+    <input id="l_stayed" placeholder="Stayed" type="number">
+    <input id="l_status" placeholder="Status">
+    <input id="l_license_status" placeholder="License Status">
+    <button onclick="addLicense()">Add</button>
+  </div>
+  <table id="licenses-table"></table>
+</div>
+
+<div class="modal" id="edit-modal">
+  <h3>Edit Record</h3>
+  <div id="edit-fields"></div>
+  <button onclick="saveEdit()">Save</button>
+  <button onclick="closeEdit()">Cancel</button>
+</div>
 
 <script>
+let editTable = "";
+let editId = "";
+
 function openTab(tabName) {
   document.querySelectorAll(".tab-content").forEach(tab => tab.classList.remove("active"));
   document.querySelectorAll(".tabs button").forEach(btn => btn.classList.remove("active"));
@@ -46,45 +115,134 @@ function openTab(tabName) {
   document.querySelector(`.tabs button[onclick*="${tabName}"]`).classList.add("active");
 }
 
-function loadTable(endpoint, tableId) {
-  fetch(endpoint)
-    .then(res => res.json())
-    .then(data => {
-      const table = document.getElementById(tableId);
-      if (data.length === 0) {
-        table.innerHTML = "<tr><td>No data</td></tr>";
-        return;
-      }
-      const keys = Object.keys(data[0]);
-      table.innerHTML = `
-        <tr>${keys.map(k => `<th>${k}</th>`).join('')}<th>Actions</th></tr>
-        ${data.map(row => `
-          <tr>
-            ${keys.map(k => `<td>${row[k]}</td>`).join('')}
-            <td>
-              <button onclick="alert('Edit ${row[keys[0]]}')">✏️</button>
-              <button onclick="deleteRow('${endpoint}', ${row[keys[0]]}, '${tableId}', '${keys[0]}')">🗑️</button>
-            </td>
-          </tr>
-        `).join('')}
-      `;
-    });
-}
-
 function deleteRow(endpoint, id, tableId, idField) {
-  const api = `${endpoint}/${id}`;
-  if (confirm(`Delete record ${id}?`)) {
-    fetch(api, { method: "DELETE" })
-      .then(res => res.json())
-      .then(() => loadTable(endpoint, tableId));
-  }
+  fetch(`${endpoint}/${id}`, { method: "DELETE" })
+    .then(() => loadTable(endpoint, tableId));
 }
 
-loadTable("/companies", "companies-table");
-loadTable("/operators", "operators-table");
-loadTable("/computers", "computers-table");
-loadTable("/softwares", "softwares-table");
-loadTable("/licenses/full", "licenses-table");
+function editRow(table, id, data) {
+  editTable = table;
+  editId = id;
+  const container = document.getElementById("edit-fields");
+  container.innerHTML = Object.keys(data).filter(k => k !== "id").map(k => `
+    <label>${k}<input data-key="${k}" value="${data[k]}"></label>
+  `).join("<br>");
+  document.getElementById("edit-modal").style.display = "block";
+}
+
+function closeEdit() {
+  document.getElementById("edit-modal").style.display = "none";
+}
+
+function saveEdit() {
+  const inputs = document.querySelectorAll("#edit-fields input");
+  const body = {};
+  inputs.forEach(input => body[input.dataset.key] = input.value);
+  fetch(`/${editTable}/${editId}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  }).then(() => {
+    closeEdit();
+    loadAll();
+  });
+}
+
+function addCompany() {
+  const body = {
+    company_name: document.getElementById("company_name").value,
+    company_number: document.getElementById("company_number").value,
+    company_director: document.getElementById("company_director").value,
+    company_phone_number: document.getElementById("company_phone_number").value,
+    company_email: document.getElementById("company_email").value,
+    company_address: document.getElementById("company_address").value
+  };
+  fetch("/companies", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }).then(() => loadTable("/companies", "companies-table"));
+}
+
+function addOperator() {
+  const body = {
+    operator_name: document.getElementById("operator_name").value,
+    identify_id: document.getElementById("identify_id").value
+  };
+  fetch("/operators", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }).then(() => loadTable("/operators", "operators-table"));
+}
+
+function addComputer() {
+  const body = {
+    computer_guid: document.getElementById("computer_guid").value,
+    computer_mac_address: document.getElementById("computer_mac_address").value
+  };
+  fetch("/computers", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }).then(() => loadTable("/computers", "computers-table"));
+}
+
+function addSoftware() {
+  const body = {
+    software_name: document.getElementById("software_name").value,
+    price: parseFloat(document.getElementById("price").value)
+  };
+  fetch("/softwares", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }).then(() => loadTable("/softwares", "softwares-table"));
+}
+
+function addLicense() {
+  const body = {
+    company_id: parseInt(document.getElementById("l_company").value),
+    operator_id: parseInt(document.getElementById("l_operator").value),
+    computer_id: parseInt(document.getElementById("l_computer").value),
+    software_id: parseInt(document.getElementById("l_software").value),
+    expire_date: document.getElementById("l_expire").value,
+    paid: parseFloat(document.getElementById("l_paid").value),
+    stayed: parseFloat(document.getElementById("l_stayed").value),
+    status: document.getElementById("l_status").value,
+    license_status: document.getElementById("l_license_status").value
+  };
+  fetch("/licenses", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }).then(() => loadTable("/licenses/full", "licenses-table"));
+}
+
+function populateDropdowns() {
+  fetch("/licenses/dropdowns").then(res => res.json()).then(data => {
+    for (const [key, value] of Object.entries({
+      l_company: data.companies,
+      l_operator: data.operators,
+      l_computer: data.computers,
+      l_software: data.softwares
+    })) {
+      const select = document.getElementById(key);
+      select.innerHTML = value.map(v => `<option value="${Object.values(v)[0]}">${Object.values(v)[1]}</option>`).join('');
+    }
+  });
+}
+
+function loadTable(endpoint, tableId) {
+  fetch(endpoint).then(res => res.json()).then(data => {
+    const table = document.getElementById(tableId);
+    if (!data.length) return table.innerHTML = "<tr><td>No data</td></tr>";
+    const keys = Object.keys(data[0]);
+    table.innerHTML = `
+      <tr>${keys.map(k => `<th>${k}</th>`).join('')}<th>Actions</th></tr>
+      ${data.map(row => `
+        <tr>
+          ${keys.map(k => `<td>${row[k]}</td>`).join('')}
+          <td>
+            <button onclick='editRow("${endpoint.replace("/full", "")}", ${row[keys[0]]}, ${JSON.stringify(row)})'>✏️</button>
+            <button onclick='deleteRow("${endpoint.replace("/full", "")}", ${row[keys[0]]}, "${tableId}", "${keys[0]}")'>🗑️</button>
+          </td>
+        </tr>
+      `).join('')}
+    `;
+  });
+}
+
+function loadAll() {
+  loadTable("/companies", "companies-table");
+  loadTable("/operators", "operators-table");
+  loadTable("/computers", "computers-table");
+  loadTable("/softwares", "softwares-table");
+  loadTable("/licenses/full", "licenses-table");
+  populateDropdowns();
+}
+
+loadAll();
 </script>
 
 </body>
