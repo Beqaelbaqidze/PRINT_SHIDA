@@ -83,15 +83,18 @@
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify(item)
-                    }).then(res => res.json()),
+                    }).then(res => res.json())
+                    .then(() => $("#" + id).jsGrid("loadData")),
                     updateItem: (item) => fetch(updateUrl, {
                         method: "PUT",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify(item)
-                    }).then(res => res.json()),
+                    }).then(res => res.json())
+                    .then(() => $("#" + id).jsGrid("loadData")),
                     deleteItem: (item) => fetch(`${deleteUrl}/${item[fields[0].name]}`, {
                         method: "DELETE"
                     })
+                        .then(() => $("#" + id).jsGrid("loadData"))
                 },
                 fields: [...fields, { type: "control" }]
             });
@@ -157,7 +160,8 @@
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
                             body: JSON.stringify(item)
-                        }).then(res => res.json());
+                        }).then(res => res.json())
+                            .then(() => $("#licensesGrid").jsGrid("loadData"));
                     },
                     updateItem: (item) => {
                         const today = new Date().toISOString().split("T")[0];
@@ -168,9 +172,14 @@
                             method: "PUT",
                             headers: { "Content-Type": "application/json" },
                             body: JSON.stringify(item)
-                        }).then(res => res.json());
+                        }).then(res => res.json())
+                            .then(() => $("#licensesGrid").jsGrid("loadData"));
                     },
-                    deleteItem: (item) => fetch(`/licenses/${item.license_id}`, { method: "DELETE" })
+                    deleteItem: (item) => {
+                        fetch(`/licenses/${item.license_id}`, { method: "DELETE" })
+                            .then(() => $("#licensesGrid").jsGrid("loadData"));
+                    },
+
                 },
                 fields: [
                     { name: "license_id", type: "number", width: 30, editing: false },
