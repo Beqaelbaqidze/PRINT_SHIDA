@@ -24,7 +24,6 @@ templates = Jinja2Templates(directory="templates")
 # Load environment variables
 load_dotenv()
 
-app = FastAPI()
 
 @app.get("/login", response_class=HTMLResponse)
 def login_form(request: Request):
