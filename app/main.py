@@ -102,6 +102,8 @@ def update(table: str, record_id: int, data: dict, id_field: str):
     conn.commit()
     cur.close()
     conn.close()
+    return record_id  # ✅ Add this
+
 
 def delete(table: str, record_id: int, id_field: str):
     conn = get_connection()
