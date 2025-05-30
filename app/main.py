@@ -32,6 +32,7 @@ def get_connection():
 
 # === MODELS ===
 class Company(BaseModel):
+    company_id: int
     company_name: str
     company_number: str
     company_director: Optional[str]
@@ -40,18 +41,22 @@ class Company(BaseModel):
     company_address: Optional[str]
 
 class Operator(BaseModel):
+    operator_id: int
     operator_name: str
     identify_id: str
 
 class Computer(BaseModel):
+    computer_id: int
     computer_guid: str
     computer_mac_address: Optional[str]
 
 class Software(BaseModel):
+    software_id: int
     software_name: str
     price: float
 
 class License(BaseModel):
+    license_id: int
     company_id: int
     operator_id: int
     computer_id: int
