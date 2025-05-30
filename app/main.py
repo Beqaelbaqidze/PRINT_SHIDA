@@ -1,11 +1,14 @@
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
+
 from app.routers import web, companies, operators, computers, softwares, licenses
 
 app = FastAPI()
 
-app.add_middleware(SessionMiddleware, secret_key="super_secret_key")
+app.add_middleware(SessionMiddleware, secret_key="super_secret_key_123")
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
