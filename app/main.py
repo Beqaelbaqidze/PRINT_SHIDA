@@ -197,7 +197,7 @@ def create_software(software: SoftwareCreate):
     return insert("softwares", software.dict(), "software_id")
 
 @app.post("/licenses/create")
-def create_license(license: License):
+def create_license(license: LicenseCreate):
     conn = get_connection()
     cur = conn.cursor()
 
