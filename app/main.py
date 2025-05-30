@@ -201,10 +201,17 @@ def get_license_by_id(license_id: int):
     return dict(zip(columns, row))
 
 
-@app.post("/licenses")
-def create_license(lic: License):
-    new_id = insert("licenses", lic.dict(), "license_id")
-    return {**lic.dict(), "license_id": new_id}
+@app.get("/licenses")
+def get_licenses():
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM licenses")
+    rows = cur.fetchall()
+    columns = [desc[0] for desc in cur.description]
+    cur.close()
+    conn.close()
+    return [dict(zip(columns, row)) for row in rows]
+
 
 @app.put("/licenses/{license_id}")
 def update_license(license_id: int, lic: License):
