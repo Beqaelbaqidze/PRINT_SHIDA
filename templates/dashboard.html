@@ -67,31 +67,38 @@
     <script src="https://cdn.jsdelivr.net/npm/jsgrid@1.5.3/dist/jsgrid.min.js"></script>
 
     <script>
-        function createGrid(id, url, fields) {
+        function createGrid(id, url, createUrl, updateUrl, deleteUrl, fields) {
             $("#" + id).jsGrid({
                 width: "100%",
                 height: "auto",
                 editing: true,
+                inserting: true,
                 sorting: true,
                 paging: true,
                 autoload: true,
                 pageSize: 10,
                 controller: {
                     loadData: () => fetch(url).then(res => res.json()),
-                    updateItem: (item) => {
-                        return fetch(url, {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify(item)
-                        }).then(res => res.json());
-                    }
+                    insertItem: (item) => fetch(createUrl, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(item)
+                    }).then(res => res.json()),
+                    updateItem: (item) => fetch(updateUrl, {
+                        method: "PUT",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(item)
+                    }).then(res => res.json()),
+                    deleteItem: (item) => fetch(`${deleteUrl}/${item[fields[0].name]}`, {
+                        method: "DELETE"
+                    })
                 },
                 fields: [...fields, { type: "control" }]
             });
         }
 
         function loadAllGrids() {
-            createGrid("companiesGrid", "/companies", [
+            createGrid("companiesGrid", "/companies", "/companies/create", "/companies/update", "/companies", [
                 { name: "company_id", type: "number", width: 30, editing: false },
                 { name: "company_name", type: "text", width: 100 },
                 { name: "company_number", type: "text", width: 60 },
@@ -101,19 +108,19 @@
                 { name: "company_address", type: "text", width: 120 }
             ]);
 
-            createGrid("operatorsGrid", "/operators", [
+            createGrid("operatorsGrid", "/operators", "/operators/create", "/operators/update", "/operators", [
                 { name: "operator_id", type: "number", width: 30, editing: false },
                 { name: "operator_name", type: "text", width: 100 },
                 { name: "identify_id", type: "text", width: 100 }
             ]);
 
-            createGrid("computersGrid", "/computers", [
+            createGrid("computersGrid", "/computers", "/computers/create", "/computers/update", "/computers", [
                 { name: "computer_id", type: "number", width: 30, editing: false },
                 { name: "computer_guid", type: "text", width: 150 },
                 { name: "computer_mac_address", type: "text", width: 150 }
             ]);
 
-            createGrid("softwaresGrid", "/softwares", [
+            createGrid("softwaresGrid", "/softwares", "/softwares/create", "/softwares/update", "/softwares", [
                 { name: "software_id", type: "number", width: 30, editing: false },
                 { name: "software_name", type: "text", width: 100 },
                 { name: "price", type: "number", width: 60 }
@@ -134,33 +141,36 @@
                 width: "100%",
                 height: "auto",
                 editing: true,
+                inserting: true,
                 sorting: true,
                 paging: true,
                 autoload: true,
                 pageSize: 10,
                 controller: {
                     loadData: () => fetch("/licenses").then(res => res.json()),
-                    updateItem: (item) => {
-                        const today = new Date().toISOString().split("T")[0]; // yyyy-mm-dd
-                        const isValidDate = item.expire_date >= today;
-
-                        // Force inactive if expire_date is invalid
-                        if (!isValidDate) {
-                            item.status = "inactive";
-                        }
-
-                        // Calculate license_status
-                        item.license_status = (item.status === "active" && isValidDate) ? "valid" : "invalid";
-
-                        return fetch("/licenses", {
+                    insertItem: (item) => {
+                        const today = new Date().toISOString().split("T")[0];
+                        const isValid = item.expire_date >= today;
+                        item.status = isValid ? item.status : "inactive";
+                        item.license_status = (item.status === "active" && isValid) ? "valid" : "invalid";
+                        return fetch("/licenses/create", {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
                             body: JSON.stringify(item)
-                        })
-                            .then(res => res.json())
-                            .then(() => $("#licensesGrid").jsGrid("loadData")); // Refresh grid
-                    }
-
+                        }).then(res => res.json());
+                    },
+                    updateItem: (item) => {
+                        const today = new Date().toISOString().split("T")[0];
+                        const isValidDate = item.expire_date >= today;
+                        if (!isValidDate) item.status = "inactive";
+                        item.license_status = (item.status === "active" && isValidDate) ? "valid" : "invalid";
+                        return fetch("/licenses/update", {
+                            method: "PUT",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify(item)
+                        }).then(res => res.json());
+                    },
+                    deleteItem: (item) => fetch(`/licenses/${item.license_id}`, { method: "DELETE" })
                 },
                 fields: [
                     { name: "license_id", type: "number", width: 30, editing: false },
@@ -171,13 +181,16 @@
                     {
                         name: "expire_date", type: "text", width: 100, align: "center",
                         itemTemplate: value => new Date(value).toLocaleDateString(),
+                        insertTemplate: function () {
+                            this._insertInput = $("<input>").attr("type", "date");
+                            return this._insertInput;
+                        },
                         editTemplate: function (value) {
                             this._editInput = $("<input>").attr("type", "date").val(value);
                             return this._editInput;
                         },
-                        editValue: function () {
-                            return this._editInput.val();
-                        }
+                        insertValue: function () { return this._insertInput.val(); },
+                        editValue: function () { return this._editInput.val(); }
                     },
                     {
                         name: "status", type: "select", width: 80,
@@ -192,19 +205,17 @@
                     { name: "stayed", type: "number", width: 60 },
                     {
                         name: "license_status", type: "text", width: 80, editing: false,
-                        itemTemplate: function (value) {
-                            return $("<span>").text(value === "valid" ? "✅ Valid" : "❌ Invalid");
-                        }
+                        itemTemplate: value => $("<span>").text(value === "valid" ? "✅ Valid" : "❌ Invalid")
                     },
                     { type: "control" }
                 ]
             });
         }
 
-        // Init
         loadAllGrids();
         loadLicenseFKsAndCreateGrid();
     </script>
+
 </body>
 
 </html>

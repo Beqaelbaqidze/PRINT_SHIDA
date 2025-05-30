@@ -133,19 +133,63 @@ def get_softwares(): return fetch_all("softwares")
 @app.get("/licenses")
 def get_licenses(): return fetch_all("licenses")
 
+# === CREATE DATA ENDPOINTS ===
+@app.post("/companies/create", response_model=int)
+def create_company(company: Company):
+    return insert("companies", company.dict(), "company_id")
+
+@app.post("/operators/create", response_model=int)
+def create_operator(operator: Operator):
+    return insert("operators", operator.dict(), "operator_id")
+
+@app.post("/computers/create", response_model=int)
+def create_computer(computer: Computer):
+    return insert("computers", computer.dict(), "computer_id")
+
+@app.post("/softwares/create", response_model=int)
+def create_software(software: Software):
+    return insert("softwares", software.dict(), "software_id")
+
+@app.post("/licenses/create", response_model=int)
+def create_license(license: License):
+    return insert("licenses", license.dict(), "license_id")
+
+
 # === UPDATE DATA ENDPOINTS ===
+@app.put("/companies/update", response_model=int)
+def update_company(company: Company):
+    return update("companies", company.company_id, company.dict(), "company_id")
 
-@app.post("/companies", response_model=int)
-def update_company(company: Company): return update("companies", company.company_id, company.dict(), "company_id")
+@app.put("/operators/update", response_model=int)
+def update_operator(operator: Operator):
+    return update("operators", operator.operator_id, operator.dict(), "operator_id")
 
-@app.post("/operators", response_model=int)
-def update_operator(operator: Operator): return update("operators", operator.operator_id, operator.dict(), "operator_id")
+@app.put("/computers/update", response_model=int)
+def update_computer(computer: Computer):
+    return update("computers", computer.computer_id, computer.dict(), "computer_id")
 
-@app.post("/computers", response_model=int)
-def update_computer(computer: Computer): return update("computers", computer.computer_id, computer.dict(), "computer_id")
+@app.put("/softwares/update", response_model=int)
+def update_software(software: Software):
+    return update("softwares", software.software_id, software.dict(), "software_id")
 
-@app.post("/softwares", response_model=int)
-def update_software(software: Software): return update("softwares", software.software_id, software.dict(), "software_id")
+@app.put("/licenses/update", response_model=int)
+def update_license(license: License):
+    return update("licenses", license.license_id, license.dict(), "license_id")
 
-@app.post("/licenses", response_model=int)
-def update_license(license: License): return update("licenses", license.license_id, license.dict(), "license_id")
+# === DELETE DATA ENDPOINTS ===
+@app.delete("/companies/{company_id}")
+def delete_company(company_id: int):
+    delete("companies", company_id, "company_id")
+@app.delete("/operators/{operator_id}")
+def delete_operator(operator_id: int):
+    delete("operators", operator_id, "operator_id")
+@app.delete("/computers/{computer_id}")
+def delete_computer(computer_id: int):
+    delete("computers", computer_id, "computer_id")
+@app.delete("/softwares/{software_id}")
+def delete_software(software_id: int):
+    delete("softwares", software_id, "software_id")
+@app.delete("/licenses/{license_id}")
+def delete_license(license_id: int):
+    delete("licenses", license_id, "license_id")
+
