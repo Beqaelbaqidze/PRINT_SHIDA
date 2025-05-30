@@ -254,22 +254,33 @@ def update_license(license: License):
     # Get software price
     cur.execute("SELECT price FROM softwares WHERE software_id = %s", (license.software_id,))
     row = cur.fetchone()
-    software_price = row[0] if row else 0
+    software_price = row[0] if row else Decimal(0)
 
-    # Recalculate stayed and status
-    stayed = software_price - (license.paid or 0)
+    # Calculate stayed safely
+    from decimal import Decimal
+    stayed = software_price - Decimal(license.paid or 0)
+
+    # Determine license status
     today = date.today()
     is_valid = license.expire_date >= today
     license_status = "valid" if license.status == "active" and is_valid else "invalid"
 
     cur.execute("""
-        UPDATE licenses SET
-            company_id=%s, operator_id=%s, computer_id=%s, software_id=%s,
-            expire_date=%s, paid=%s, stayed=%s, status=%s, license_status=%s
+        UPDATE licenses SET 
+            company_id = %s,
+            operator_id = %s,
+            computer_id = %s,
+            software_id = %s,
+            expire_date = %s,
+            paid = %s,
+            stayed = %s,
+            status = %s,
+            license_status = %s
         WHERE license_id = %s
     """, (
-        license.company_id, license.operator_id, license.computer_id, license.software_id,
-        license.expire_date, license.paid, stayed, license.status, license_status,
+        license.company_id, license.operator_id, license.computer_id,
+        license.software_id, license.expire_date, license.paid,
+        stayed, license.status, license_status,
         license.license_id
     ))
 
@@ -277,6 +288,7 @@ def update_license(license: License):
     cur.close()
     conn.close()
     return {"success": True}
+
 
 
 # === DELETE ENDPOINTS ===
