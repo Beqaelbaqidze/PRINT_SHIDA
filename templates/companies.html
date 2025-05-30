@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Companies Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="p-5 bg-light">
+  <h2 class="mb-4">Companies Dashboard</h2>
+  <table class="table table-bordered table-striped bg-white">
+    <thead class="table-dark">
+      <tr>
+        <th>ID</th><th>Name</th><th>Number</th><th>Director</th><th>Phone</th><th>Email</th><th>Address</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for c in companies %}
+        <tr>
+          <td>{{ c[0] }}</td>
+          <td>{{ c[1] }}</td>
+          <td>{{ c[2] }}</td>
+          <td>{{ c[3] }}</td>
+          <td>{{ c[4] }}</td>
+          <td>{{ c[5] }}</td>
+          <td>{{ c[6] }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</body>
+</html>
