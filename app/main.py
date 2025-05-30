@@ -8,6 +8,15 @@ from datetime import date
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse
 from fastapi import Request
+from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.sessions import SessionMiddleware
+from fastapi.responses import RedirectResponse
+from fastapi import Form
+from datetime import date
+
+app = FastAPI()
+app.add_middleware(SessionMiddleware, secret_key="BeqasSecretKey")
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
 templates = Jinja2Templates(directory="templates")
 
@@ -17,9 +26,29 @@ load_dotenv()
 
 app = FastAPI()
 
+@app.get("/login", response_class=HTMLResponse)
+def login_form(request: Request):
+    return templates.TemplateResponse("login.html", {"request": request, "error": None})
+
+@app.post("/login")
+def login(request: Request, username: str = Form(...), password: str = Form(...)):
+    if username == "admin" and password == "admin123":
+        request.session["user"] = username
+        return RedirectResponse(url="/", status_code=302)
+    return templates.TemplateResponse("login.html", {"request": request, "error": "Invalid credentials"})
+
+@app.get("/logout")
+def logout(request: Request):
+    request.session.clear()
+    return RedirectResponse(url="/login", status_code=302)
+
+
 @app.get("/", response_class=HTMLResponse)
 def dashboard(request: Request):
+    if not request.session.get("user"):
+        return RedirectResponse(url="/login")
     return templates.TemplateResponse("dashboard.html", {"request": request})
+
 
 def get_connection():
     return psycopg2.connect(
@@ -168,9 +197,36 @@ def create_computer(computer: ComputerCreate):
 def create_software(software: SoftwareCreate):
     return insert("softwares", software.dict(), "software_id")
 
-@app.post("/licenses/create", response_model=int)
-def create_license(license: LicenseCreate):
-    return insert("licenses", license.dict(), "license_id")
+@app.post("/licenses/create")
+def create_license(license: License):
+    conn = get_connection()
+    cur = conn.cursor()
+
+    # Get software price
+    cur.execute("SELECT price FROM softwares WHERE software_id = %s", (license.software_id,))
+    row = cur.fetchone()
+    software_price = row[0] if row else 0
+
+    # Calculate stayed
+    stayed = software_price - (license.paid or 0)
+
+    # Determine license status
+    today = date.today()
+    is_valid = license.expire_date >= today
+    license_status = "valid" if license.status == "active" and is_valid else "invalid"
+
+    cur.execute("""
+        INSERT INTO licenses (company_id, operator_id, computer_id, software_id, expire_date, paid, stayed, status, license_status)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+    """, (
+        license.company_id, license.operator_id, license.computer_id, license.software_id,
+        license.expire_date, license.paid, stayed, license.status, license_status
+    ))
+
+    conn.commit()
+    cur.close()
+    conn.close()
+    return {"success": True}
 
 # === UPDATE ENDPOINTS ===
 @app.put("/companies/update", response_model=int)
@@ -189,9 +245,38 @@ def update_computer(computer: Computer):
 def update_software(software: Software):
     return update("softwares", software.software_id, software.dict(), "software_id")
 
-@app.put("/licenses/update", response_model=int)
+@app.put("/licenses/update")
 def update_license(license: License):
-    return update("licenses", license.license_id, license.dict(), "license_id")
+    conn = get_connection()
+    cur = conn.cursor()
+
+    # Get software price
+    cur.execute("SELECT price FROM softwares WHERE software_id = %s", (license.software_id,))
+    row = cur.fetchone()
+    software_price = row[0] if row else 0
+
+    # Recalculate stayed and status
+    stayed = software_price - (license.paid or 0)
+    today = date.today()
+    is_valid = license.expire_date >= today
+    license_status = "valid" if license.status == "active" and is_valid else "invalid"
+
+    cur.execute("""
+        UPDATE licenses SET
+            company_id=%s, operator_id=%s, computer_id=%s, software_id=%s,
+            expire_date=%s, paid=%s, stayed=%s, status=%s, license_status=%s
+        WHERE license_id = %s
+    """, (
+        license.company_id, license.operator_id, license.computer_id, license.software_id,
+        license.expire_date, license.paid, stayed, license.status, license_status,
+        license.license_id
+    ))
+
+    conn.commit()
+    cur.close()
+    conn.close()
+    return {"success": True}
+
 
 # === DELETE ENDPOINTS ===
 @app.delete("/companies/{company_id}")
