@@ -31,8 +31,9 @@ def get_connection():
     )
 
 # === MODELS ===
-class Company(BaseModel):
-    company_id: int
+
+# === COMPANY MODELS ===
+class CompanyCreate(BaseModel):
     company_name: str
     company_number: str
     company_director: Optional[str]
@@ -40,23 +41,39 @@ class Company(BaseModel):
     company_email: Optional[str]
     company_address: Optional[str]
 
-class Operator(BaseModel):
-    operator_id: int
+class Company(CompanyCreate):
+    company_id: int
+
+
+# === OPERATOR MODELS ===
+class OperatorCreate(BaseModel):
     operator_name: str
     identify_id: str
 
-class Computer(BaseModel):
-    computer_id: int
+class Operator(OperatorCreate):
+    operator_id: int
+
+
+# === COMPUTER MODELS ===
+class ComputerCreate(BaseModel):
     computer_guid: str
     computer_mac_address: Optional[str]
 
-class Software(BaseModel):
-    software_id: int
+class Computer(ComputerCreate):
+    computer_id: int
+
+
+# === SOFTWARE MODELS ===
+class SoftwareCreate(BaseModel):
     software_name: str
     price: float
 
-class License(BaseModel):
-    license_id: int
+class Software(SoftwareCreate):
+    software_id: int
+
+
+# === LICENSE MODELS ===
+class LicenseCreate(BaseModel):
     company_id: int
     operator_id: int
     computer_id: int
@@ -66,6 +83,9 @@ class License(BaseModel):
     stayed: Optional[float] = 0
     status: Optional[str] = "active"
     license_status: Optional[str] = "valid"
+
+class License(LicenseCreate):
+    license_id: int
 
 # === GENERIC DB HELPERS ===
 def fetch_all(table: str):
@@ -115,9 +135,7 @@ def delete(table: str, record_id: int, id_field: str):
     cur.close()
     conn.close()
 
-# === GET DATA ENDPOINTS ===
-
-
+# === GET ENDPOINTS ===
 @app.get("/companies")
 def get_companies(): return fetch_all("companies")
 
@@ -133,29 +151,28 @@ def get_softwares(): return fetch_all("softwares")
 @app.get("/licenses")
 def get_licenses(): return fetch_all("licenses")
 
-# === CREATE DATA ENDPOINTS ===
+# === CREATE ENDPOINTS ===
 @app.post("/companies/create", response_model=int)
-def create_company(company: Company):
+def create_company(company: CompanyCreate):
     return insert("companies", company.dict(), "company_id")
 
 @app.post("/operators/create", response_model=int)
-def create_operator(operator: Operator):
+def create_operator(operator: OperatorCreate):
     return insert("operators", operator.dict(), "operator_id")
 
 @app.post("/computers/create", response_model=int)
-def create_computer(computer: Computer):
+def create_computer(computer: ComputerCreate):
     return insert("computers", computer.dict(), "computer_id")
 
 @app.post("/softwares/create", response_model=int)
-def create_software(software: Software):
+def create_software(software: SoftwareCreate):
     return insert("softwares", software.dict(), "software_id")
 
 @app.post("/licenses/create", response_model=int)
-def create_license(license: License):
+def create_license(license: LicenseCreate):
     return insert("licenses", license.dict(), "license_id")
 
-
-# === UPDATE DATA ENDPOINTS ===
+# === UPDATE ENDPOINTS ===
 @app.put("/companies/update", response_model=int)
 def update_company(company: Company):
     return update("companies", company.company_id, company.dict(), "company_id")
@@ -176,20 +193,23 @@ def update_software(software: Software):
 def update_license(license: License):
     return update("licenses", license.license_id, license.dict(), "license_id")
 
-# === DELETE DATA ENDPOINTS ===
+# === DELETE ENDPOINTS ===
 @app.delete("/companies/{company_id}")
 def delete_company(company_id: int):
     delete("companies", company_id, "company_id")
+
 @app.delete("/operators/{operator_id}")
 def delete_operator(operator_id: int):
     delete("operators", operator_id, "operator_id")
+
 @app.delete("/computers/{computer_id}")
 def delete_computer(computer_id: int):
     delete("computers", computer_id, "computer_id")
+
 @app.delete("/softwares/{software_id}")
 def delete_software(software_id: int):
     delete("softwares", software_id, "software_id")
+
 @app.delete("/licenses/{license_id}")
 def delete_license(license_id: int):
     delete("licenses", license_id, "license_id")
-
