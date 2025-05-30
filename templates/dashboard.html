@@ -1,10 +1,68 @@
-
 <!DOCTYPE html>
-<html>
-<head><title>Dashboard</title></head>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>License Dashboard</title>
+  <style>
+    body { font-family: Arial; margin: 20px; }
+    table { border-collapse: collapse; width: 100%; margin-bottom: 40px; }
+    th, td { border: 1px solid #ccc; padding: 8px; }
+    th { background-color: #f0f0f0; }
+    section { margin-bottom: 60px; }
+  </style>
+</head>
 <body>
-  <h1>Admin Dashboard</h1>
-  <a href="/logout">Logout</a>
-  <p>Here you can manage all tables like companies, licenses, softwares, etc.</p>
+
+<h1>License Management Dashboard</h1>
+
+<section id="companies-section">
+  <h2>Companies</h2>
+  <table id="companies-table"></table>
+</section>
+
+<section id="operators-section">
+  <h2>Operators</h2>
+  <table id="operators-table"></table>
+</section>
+
+<section id="computers-section">
+  <h2>Computers</h2>
+  <table id="computers-table"></table>
+</section>
+
+<section id="softwares-section">
+  <h2>Softwares</h2>
+  <table id="softwares-table"></table>
+</section>
+
+<section id="licenses-section">
+  <h2>Licenses</h2>
+  <table id="licenses-table"></table>
+</section>
+
+<script>
+async function loadTable(endpoint, tableId, extraFields = []) {
+  const res = await fetch(endpoint);
+  const data = await res.json();
+  const table = document.getElementById(tableId);
+  if (!data.length) {
+    table.innerHTML = "<tr><td>No data</td></tr>";
+    return;
+  }
+
+  const keys = Object.keys(data[0]);
+  table.innerHTML = `
+    <tr>${keys.map(k => `<th>${k}</th>`).join('')}</tr>
+    ${data.map(row => `<tr>${keys.map(k => `<td>${row[k]}</td>`).join('')}</tr>`).join('')}
+  `;
+}
+
+loadTable("/companies", "companies-table");
+loadTable("/operators", "operators-table");
+loadTable("/computers", "computers-table");
+loadTable("/softwares", "softwares-table");
+loadTable("/licenses/full", "licenses-table");
+</script>
+
 </body>
 </html>
