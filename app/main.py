@@ -108,158 +108,37 @@ def delete(table: str, record_id: int, id_field: str):
     cur.close()
     conn.close()
 
-# === CRUD ENDPOINTS ===
+# === GET DATA ENDPOINTS ===
 
-# Companies
+
 @app.get("/companies")
 def get_companies(): return fetch_all("companies")
 
-@app.post("/companies")
-def create_company(company: Company):
-    new_id = insert("companies", company.dict(), "company_id")
-    return {**company.dict(), "company_id": new_id}
-
-@app.put("/companies/{company_id}")
-def update_company(company_id: int, company: Company):
-    update("companies", company_id, company.dict(), "company_id")
-    return {**company.dict(), "company_id": company_id}
-
-@app.delete("/companies/{company_id}")
-def delete_company(company_id: int):
-    delete("companies", company_id, "company_id")
-    return {"message": f"Company {company_id} deleted"}
-
-# Operators
 @app.get("/operators")
 def get_operators(): return fetch_all("operators")
 
-@app.post("/operators")
-def create_operator(op: Operator):
-    new_id = insert("operators", op.dict(), "operator_id")
-    return {**op.dict(), "operator_id": new_id}
-
-@app.put("/operators/{operator_id}")
-def update_operator(operator_id: int, op: Operator):
-    update("operators", operator_id, op.dict(), "operator_id")
-    return {**op.dict(), "operator_id": operator_id}
-
-@app.delete("/operators/{operator_id}")
-def delete_operator(operator_id: int):
-    delete("operators", operator_id, "operator_id")
-    return {"message": f"Operator {operator_id} deleted"}
-
-# Computers
 @app.get("/computers")
 def get_computers(): return fetch_all("computers")
 
-@app.post("/computers")
-def create_computer(comp: Computer):
-    new_id = insert("computers", comp.dict(), "computer_id")
-    return {**comp.dict(), "computer_id": new_id}
-
-@app.put("/computers/{computer_id}")
-def update_computer(computer_id: int, comp: Computer):
-    update("computers", computer_id, comp.dict(), "computer_id")
-    return {**comp.dict(), "computer_id": computer_id}
-
-@app.delete("/computers/{computer_id}")
-def delete_computer(computer_id: int):
-    delete("computers", computer_id, "computer_id")
-    return {"message": f"Computer {computer_id} deleted"}
-
-# Softwares
 @app.get("/softwares")
 def get_softwares(): return fetch_all("softwares")
 
-@app.post("/softwares")
-def create_software(soft: Software):
-    new_id = insert("softwares", soft.dict(), "software_id")
-    return {**soft.dict(), "software_id": new_id}
-
-@app.put("/softwares/{software_id}")
-def update_software(software_id: int, soft: Software):
-    update("softwares", software_id, soft.dict(), "software_id")
-    return {**soft.dict(), "software_id": software_id}
-
-@app.delete("/softwares/{software_id}")
-def delete_software(software_id: int):
-    delete("softwares", software_id, "software_id")
-    return {"message": f"Software {software_id} deleted"}
-
-# Licenses
-@app.get("/licenses/{license_id}")
-def get_license_by_id(license_id: int):
-    conn = get_connection()
-    cur = conn.cursor()
-    cur.execute("SELECT * FROM licenses WHERE license_id = %s", (license_id,))
-    row = cur.fetchone()
-    if not row:
-        raise HTTPException(status_code=404, detail="License not found")
-    columns = [desc[0] for desc in cur.description]
-    cur.close()
-    conn.close()
-    return dict(zip(columns, row))
-
-
 @app.get("/licenses")
-def get_licenses():
-    conn = get_connection()
-    cur = conn.cursor()
-    cur.execute("SELECT * FROM licenses")
-    rows = cur.fetchall()
-    columns = [desc[0] for desc in cur.description]
-    cur.close()
-    conn.close()
-    return [dict(zip(columns, row)) for row in rows]
+def get_licenses(): return fetch_all("licenses")
 
+# === UPDATE DATA ENDPOINTS ===
 
-@app.put("/licenses/{license_id}")
-def update_license(license_id: int, lic: License):
-    update("licenses", license_id, lic.dict(), "license_id")
-    return {**lic.dict(), "license_id": license_id}
+@app.post("/companies", response_model=int)
+def update_company(company: Company): return update("companies", company.company_id, company.dict(), "company_id")
 
-@app.delete("/licenses/{license_id}")
-def delete_license(license_id: int):
-    delete("licenses", license_id, "license_id")
-    return {"message": f"License {license_id} deleted"}
-@app.get("/licenses/full")
-def get_licenses_with_details():
-    conn = get_connection()
-    cur = conn.cursor()
-    cur.execute("""
-        SELECT 
-            l.license_id,
-            l.company_id,
-            l.operator_id,
-            l.computer_id,
-            l.software_id,
-            c.company_name,
-            o.operator_name,
-            comp.computer_guid,
-            s.software_name,
-            l.expire_date,
-            l.paid,
-            l.stayed,
-            l.status,
-            l.license_status
-        FROM licenses l
-        JOIN companies c ON l.company_id = c.company_id
-        JOIN operators o ON l.operator_id = o.operator_id
-        JOIN computers comp ON l.computer_id = comp.computer_id
-        JOIN softwares s ON l.software_id = s.software_id
-        ORDER BY l.license_id
-    """)
-    rows = cur.fetchall()
-    columns = [desc[0] for desc in cur.description]
-    cur.close()
-    conn.close()
-    return [dict(zip(columns, row)) for row in rows]
+@app.post("/operators", response_model=int)
+def update_operator(operator: Operator): return update("operators", operator.operator_id, operator.dict(), "operator_id")
 
-@app.get("/licenses/dropdowns")
-def get_license_dropdowns():
-    return {
-        "companies": fetch_all("companies"),
-        "operators": fetch_all("operators"),
-        "computers": fetch_all("computers"),
-        "softwares": fetch_all("softwares")
-    }
+@app.post("/computers", response_model=int)
+def update_computer(computer: Computer): return update("computers", computer.computer_id, computer.dict(), "computer_id")
+
+@app.post("/softwares", response_model=int)
+def update_software(software: Software): return update("softwares", software.software_id, software.dict(), "software_id")
+
+@app.post("/licenses", response_model=int)
+def update_license(license: License): return update("licenses", license.license_id, license.dict(), "license_id")

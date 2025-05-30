@@ -1,36 +1,67 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Update Company</title>
 </head>
 <body>
-    
+    <h2>Update Company</h2>
+    <form id="updateForm">
+        <label for="company_id">Company ID (Primary Key):</label>
+        <input type="number" id="company_id" name="company_id" required><br><br>
+
+        <label for="company_number">Company Number:</label>
+        <input type="number" id="company_number" name="company_number" required><br><br>
+
+        <label for="company_name">Company Name:</label>
+        <input type="text" id="company_name" name="company_name"><br><br>
+
+        <label for="representative_name">Representative Name:</label>
+        <input type="text" id="representative_name" name="representative_name"><br><br>
+
+        <label for="email">Email:</label>
+        <input type="email" id="email" name="email"><br><br>
+
+        <label for="phone">Phone:</label>
+        <input type="text" id="phone" name="phone"><br><br>
+
+        <label for="address">Address:</label>
+        <input type="text" id="address" name="address"><br><br>
+
+        <button type="submit">Update Company</button>
+    </form>
+
+    <script>
+        document.getElementById('updateForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const company = {
+                company_id: parseInt(document.getElementById('company_id').value),
+                company_number: parseInt(document.getElementById('company_number').value),
+                company_name: document.getElementById('company_name').value,
+                representative_name: document.getElementById('representative_name').value,
+                email: document.getElementById('email').value,
+                phone: document.getElementById('phone').value,
+                address: document.getElementById('address').value
+            };
+
+            fetch('/companies', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(company)
+            })
+            .then(res => {
+                if (!res.ok) throw new Error("Failed to update company");
+                return res.json();
+            })
+            .then(data => {
+                alert("Company updated successfully. ID: " + data);
+                console.log("Update result:", data);
+            })
+            .catch(err => {
+                alert("Update failed: " + err.message);
+                console.error("Error:", err);
+            });
+        });
+    </script>
 </body>
-<script>
-function fetchData(url) {
-    var xhr = new XMLHttpRequest();
-    xhr.open('GET', url, true);
-    xhr.onreadystatechange = function () {
-        if (xhr.readyState === 4) {
-            if (xhr.status === 200) {
-                var data = JSON.parse(xhr.responseText);
-                console.log(url, data);
-                // You can update the DOM here with the received data
-            } else {
-                console.error('Error fetching', url, xhr.statusText);
-            }
-        }
-    };
-    xhr.send();
-}
-
-fetchData('/companies');
-fetchData('/operators');
-fetchData('/computers');
-fetchData('/softwares');
-fetchData('/licenses');
-</script>
-
 </html>
