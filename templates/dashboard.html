@@ -1,67 +1,113 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Update Company</title>
+  <title>Admin Dashboard</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jsgrid@1.5.3/dist/jsgrid.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jsgrid@1.5.3/dist/jsgrid-theme.min.css">
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; background: #f7f7f7; }
+    h2 { margin-top: 40px; }
+    .grid-container { margin-bottom: 60px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 6px rgba(0,0,0,0.1); }
+    .jsgrid { font-size: 14px; }
+  </style>
 </head>
 <body>
-    <h2>Update Company</h2>
-    <form id="updateForm">
-        <label for="company_id">Company ID (Primary Key):</label>
-        <input type="number" id="company_id" name="company_id" required><br><br>
 
-        <label for="company_number">Company Number:</label>
-        <input type="number" id="company_number" name="company_number" required><br><br>
+  <h1>Admin Dashboard</h1>
 
-        <label for="company_name">Company Name:</label>
-        <input type="text" id="company_name" name="company_name"><br><br>
+  <div class="grid-container">
+    <h2>Companies</h2>
+    <div id="companiesGrid"></div>
+  </div>
 
-        <label for="representative_name">Representative Name:</label>
-        <input type="text" id="representative_name" name="representative_name"><br><br>
+  <div class="grid-container">
+    <h2>Operators</h2>
+    <div id="operatorsGrid"></div>
+  </div>
 
-        <label for="email">Email:</label>
-        <input type="email" id="email" name="email"><br><br>
+  <div class="grid-container">
+    <h2>Computers</h2>
+    <div id="computersGrid"></div>
+  </div>
 
-        <label for="phone">Phone:</label>
-        <input type="text" id="phone" name="phone"><br><br>
+  <div class="grid-container">
+    <h2>Softwares</h2>
+    <div id="softwaresGrid"></div>
+  </div>
 
-        <label for="address">Address:</label>
-        <input type="text" id="address" name="address"><br><br>
+  <div class="grid-container">
+    <h2>Licenses</h2>
+    <div id="licensesGrid"></div>
+  </div>
 
-        <button type="submit">Update Company</button>
-    </form>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.4/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsgrid@1.5.3/dist/jsgrid.min.js"></script>
 
-    <script>
-        document.getElementById('updateForm').addEventListener('submit', function(e) {
-            e.preventDefault();
+  <script>
+    function createGrid(id, url, fields) {
+      $("#" + id).jsGrid({
+        width: "100%",
+        height: "auto",
+        editing: true,
+        sorting: true,
+        paging: true,
+        autoload: true,
+        pageSize: 10,
+        controller: {
+          loadData: () => fetch(url).then(res => res.json()),
+          updateItem: item =>
+            fetch(url, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(item)
+            }).then(res => res.json())
+        },
+        fields: [...fields, { type: "control" }]
+      });
+    }
 
-            const company = {
-                company_id: parseInt(document.getElementById('company_id').value),
-                company_number: parseInt(document.getElementById('company_number').value),
-                company_name: document.getElementById('company_name').value,
-                representative_name: document.getElementById('representative_name').value,
-                email: document.getElementById('email').value,
-                phone: document.getElementById('phone').value,
-                address: document.getElementById('address').value
-            };
+    // === GRID CONFIGS ===
 
-            fetch('/companies', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(company)
-            })
-            .then(res => {
-                if (!res.ok) throw new Error("Failed to update company");
-                return res.json();
-            })
-            .then(data => {
-                alert("Company updated successfully. ID: " + data);
-                console.log("Update result:", data);
-            })
-            .catch(err => {
-                alert("Update failed: " + err.message);
-                console.error("Error:", err);
-            });
-        });
-    </script>
+    createGrid("companiesGrid", "/companies", [
+      { name: "company_id", type: "number", width: 30, editing: false },
+      { name: "company_name", type: "text", width: 100 },
+      { name: "company_number", type: "text", width: 50 },
+      { name: "company_director", type: "text", width: 100 },
+      { name: "company_phone_number", type: "text", width: 80 },
+      { name: "company_email", type: "text", width: 100 },
+      { name: "company_address", type: "text", width: 100 }
+    ]);
+
+    createGrid("operatorsGrid", "/operators", [
+      { name: "operator_id", type: "number", width: 30, editing: false },
+      { name: "operator_name", type: "text", width: 100 },
+      { name: "identify_id", type: "text", width: 100 }
+    ]);
+
+    createGrid("computersGrid", "/computers", [
+      { name: "computer_id", type: "number", width: 30, editing: false },
+      { name: "computer_guid", type: "text", width: 120 },
+      { name: "computer_mac_address", type: "text", width: 120 }
+    ]);
+
+    createGrid("softwaresGrid", "/softwares", [
+      { name: "software_id", type: "number", width: 30, editing: false },
+      { name: "software_name", type: "text", width: 100 },
+      { name: "price", type: "number", width: 60 }
+    ]);
+
+    createGrid("licensesGrid", "/licenses", [
+      { name: "license_id", type: "number", width: 30, editing: false },
+      { name: "company_id", type: "number", width: 50 },
+      { name: "operator_id", type: "number", width: 50 },
+      { name: "computer_id", type: "number", width: 50 },
+      { name: "software_id", type: "number", width: 50 },
+      { name: "expire_date", type: "text", width: 80 },
+      { name: "paid", type: "number", width: 50 },
+      { name: "stayed", type: "number", width: 50 },
+      { name: "status", type: "text", width: 60 },
+      { name: "license_status", type: "text", width: 80 }
+    ]);
+  </script>
 </body>
 </html>
