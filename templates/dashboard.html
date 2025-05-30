@@ -19,6 +19,9 @@
       border-radius: 8px;
       box-shadow: 0 0 5px rgba(0,0,0,0.1);
     }
+    .jsgrid-cell {
+      font-size: 14px;
+    }
   </style>
 </head>
 <body>
@@ -107,7 +110,6 @@
       ]);
     }
 
-    // === Load FK Dropdowns for Licenses ===
     let companies = [], operators = [], computers = [], softwares = [];
 
     async function loadLicenseFKsAndCreateGrid() {
@@ -129,35 +131,61 @@
         controller: {
           loadData: () => fetch("/licenses").then(res => res.json()),
           updateItem: (item) => {
+            const today = new Date().toISOString().split("T")[0]; // yyyy-mm-dd
+            const isValidDate = item.expire_date >= today;
+            item.license_status = (item.status === "active" && isValidDate) ? "valid" : "invalid";
+
             return fetch("/licenses", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify(item)
             })
             .then(res => res.json())
-            .then(() => $("#licensesGrid").jsGrid("loadData")); // Auto-refresh grid
+            .then(() => $("#licensesGrid").jsGrid("loadData")); // Refresh
           }
         },
         fields: [
           { name: "license_id", type: "number", width: 30, editing: false },
           { name: "company_id", type: "select", title: "Company", items: companies, valueField: "company_id", textField: "company_name", width: 100 },
           { name: "operator_id", type: "select", title: "Operator", items: operators, valueField: "operator_id", textField: "operator_name", width: 100 },
-          { name: "computer_id", type: "select", title: "Computer", items: computers, valueField: "computer_id", textField: "computer_guid", width: 150 },
+          { name: "computer_id", type: "select", title: "Computer", items: computers, valueField: "computer_id", textField: "computer_guid", width: 120 },
           { name: "software_id", type: "select", title: "Software", items: softwares, valueField: "software_id", textField: "software_name", width: 100 },
-          { name: "expire_date", type: "text", width: 80 },
+          {
+            name: "expire_date", type: "text", width: 100, align: "center",
+            itemTemplate: value => new Date(value).toLocaleDateString(),
+            editTemplate: function(value) {
+              this._editInput = $("<input>").attr("type", "date").val(value);
+              return this._editInput;
+            },
+            editValue: function() {
+              return this._editInput.val();
+            }
+          },
+          {
+            name: "status", type: "select", width: 80,
+            items: [
+              { Name: "active", Id: "active" },
+              { Name: "inactive", Id: "inactive" }
+            ],
+            valueField: "Id",
+            textField: "Name"
+          },
           { name: "paid", type: "number", width: 60 },
           { name: "stayed", type: "number", width: 60 },
-          { name: "status", type: "text", width: 70 },
-          { name: "license_status", type: "text", width: 100 },
+          {
+            name: "license_status", type: "text", width: 80, editing: false,
+            itemTemplate: function(value) {
+              return $("<span>").text(value === "valid" ? "✅ Valid" : "❌ Invalid");
+            }
+          },
           { type: "control" }
         ]
       });
     }
 
-    // Load all data
+    // Init
     loadAllGrids();
     loadLicenseFKsAndCreateGrid();
   </script>
-
 </body>
 </html>
