@@ -13,6 +13,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from fastapi.responses import RedirectResponse
 from fastapi import Form
 from datetime import date
+from decimal import Decimal
 
 app = FastAPI()
 app.add_middleware(SessionMiddleware, secret_key="BeqasSecretKey")
@@ -196,6 +197,7 @@ def create_computer(computer: ComputerCreate):
 def create_software(software: SoftwareCreate):
     return insert("softwares", software.dict(), "software_id")
 
+
 @app.post("/licenses/create")
 def create_license(license: LicenseCreate):
     conn = get_connection()
@@ -204,10 +206,10 @@ def create_license(license: LicenseCreate):
     # Get software price
     cur.execute("SELECT price FROM softwares WHERE software_id = %s", (license.software_id,))
     row = cur.fetchone()
-    software_price = row[0] if row else 0
+    software_price = row[0] if row else Decimal(0)
 
     # Calculate stayed
-    stayed = software_price - (license.paid or 0)
+    stayed = software_price - Decimal(license.paid or 0)
 
     # Determine license status
     today = date.today()
