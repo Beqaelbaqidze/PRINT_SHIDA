@@ -116,6 +116,16 @@ class LicenseCreate(BaseModel):
 class License(LicenseCreate):
     license_id: int
 
+# === SOFTWARE BUTTON MODELS ===
+class SoftwareButtonCreate(BaseModel):
+    software_id: int
+    button_name: str
+    button_action: Optional[str]
+    order_index: Optional[int] = 0
+
+class SoftwareButton(SoftwareButtonCreate):
+    button_id: int
+
 # === GENERIC DB HELPERS ===
 def fetch_all(table: str):
     conn = get_connection()
@@ -330,7 +340,6 @@ def update_license(license: License):
     return {"success": True}
 
 
-
 # === DELETE ENDPOINTS ===
 @app.delete("/companies/{company_id}")
 def delete_company(company_id: int):
@@ -351,3 +360,20 @@ def delete_software(software_id: int):
 @app.delete("/licenses/{license_id}")
 def delete_license(license_id: int):
     delete("licenses", license_id, "license_id")
+
+
+@app.get("/softwares_buttons")
+def get_software_buttons():
+    return fetch_all("softwares_buttons")
+
+@app.post("/softwares_buttons/create", response_model=int)
+def create_software_button(button: SoftwareButtonCreate):
+    return insert("softwares_buttons", button.dict(), "button_id")
+
+@app.put("/softwares_buttons/update", response_model=int)
+def update_software_button(button: SoftwareButton):
+    return update("softwares_buttons", button.button_id, button.dict(), "button_id")
+
+@app.delete("/softwares_buttons/{button_id}")
+def delete_software_button(button_id: int):
+    delete("softwares_buttons", button_id, "button_id")
