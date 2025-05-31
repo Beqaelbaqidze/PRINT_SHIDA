@@ -120,11 +120,10 @@ class License(LicenseCreate):
 class SoftwareButtonCreate(BaseModel):
     software_id: int
     button_name: str
-    button_action: Optional[str]
-    order_index: Optional[int] = 0
 
 class SoftwareButton(SoftwareButtonCreate):
     button_id: int
+
 
 # === GENERIC DB HELPERS ===
 def fetch_all(table: str):
