@@ -132,6 +132,7 @@ class LicenseCheckRequest(BaseModel):
     company_address: str
     computer_guid: str
     computer_mac_address: str
+    operator_fullname: str
 
 
 
@@ -393,7 +394,25 @@ def check_license(data: LicenseCheckRequest):
     conn = get_connection()
     cur = conn.cursor()
 
-    # Step 1: Find the company
+    # === Step 0: Parse operator_fullname ===
+    import re
+    match = re.match(r"^(.*?)\s*\((\d+)\)$", data.operator_fullname.strip())
+    if not match:
+        raise HTTPException(status_code=400, detail="Invalid operator format. Use 'Name (ID)'")
+
+    operator_name = match.group(1).strip()
+    operator_identify_id = int(match.group(2).strip())
+
+    # === Step 0.1: Validate operator ===
+    cur.execute("""
+        SELECT operator_id FROM operators
+        WHERE operator_name = %s AND identify_id = %s
+    """, (operator_name, operator_identify_id))
+    operator_row = cur.fetchone()
+    if not operator_row:
+        raise HTTPException(status_code=403, detail="Operator not authorized")
+
+    # === Step 1: Find the company ===
     cur.execute("""
         SELECT company_id FROM companies
         WHERE company_name = %s AND company_number = %s AND
@@ -411,7 +430,7 @@ def check_license(data: LicenseCheckRequest):
         raise HTTPException(status_code=404, detail="Company not found")
     company_id = company_row[0]
 
-    # Step 2: Find the computer
+    # === Step 2: Find the computer ===
     cur.execute("""
         SELECT computer_id FROM computers
         WHERE computer_guid = %s AND computer_mac_address = %s
@@ -421,7 +440,7 @@ def check_license(data: LicenseCheckRequest):
         raise HTTPException(status_code=404, detail="Computer not found")
     computer_id = computer_row[0]
 
-    # Step 3: Find valid licenses
+    # === Step 3: Check valid licenses ===
     cur.execute("""
         SELECT s.software_id, s.software_name, s.price
         FROM licenses l
@@ -434,7 +453,7 @@ def check_license(data: LicenseCheckRequest):
 
     software_list = []
     for s_id, s_name, s_price in softwares:
-        # Fetch buttons for each software
+        # === Fetch buttons ===
         cur.execute("""
             SELECT button_id, button_name
             FROM softwares_buttons
@@ -453,5 +472,9 @@ def check_license(data: LicenseCheckRequest):
 
     return {
         "status": "valid",
+        "operator": {
+            "name": operator_name,
+            "identify_id": operator_identify_id
+        },
         "softwares": software_list
     }
