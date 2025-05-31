@@ -538,18 +538,17 @@ def get_operators_by_machine_get(machine_name: str, mac_address: str):
     cur = conn.cursor()
 
     cur.execute("""
-    SELECT DISTINCT o.operator_name || ' (' || o.identify_id || ')' AS fullname
-    FROM licenses l
-    JOIN operators o ON l.operator_id = o.operator_id
-    WHERE l.computer_id = (
-        SELECT computer_id FROM computers
-        WHERE TRIM(LOWER(computer_guid)) = TRIM(LOWER(%s))
-          AND TRIM(LOWER(computer_mac_address)) = TRIM(LOWER(%s))
-        LIMIT 1
-    )
-    AND l.license_status = 'valid'
-""", (machine_name, mac_address))
-
+        SELECT DISTINCT o.operator_name || ' (' || o.identify_id || ')' AS fullname
+        FROM licenses l
+        JOIN operators o ON l.operator_id = o.operator_id
+        WHERE l.computer_id = (
+            SELECT computer_id FROM computers
+            WHERE TRIM(LOWER(computer_guid)) = TRIM(LOWER(%s))
+              AND TRIM(LOWER(computer_mac_address)) = TRIM(LOWER(%s))
+            LIMIT 1
+        )
+        AND LOWER(l.license_status) = 'valid'
+    """, (machine_name.strip().lower(), mac_address.strip().lower()))
 
     rows = cur.fetchall()
     cur.close()
