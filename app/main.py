@@ -529,3 +529,27 @@ def autofill_license_info(data: AutofillRequest):
         "company_address": row[4],
         "operator_fullname": f"{row[5]} ({row[6]})"
     }
+
+@app.post("/api/operators/by-machine", response_class=HTMLResponse)
+def get_operators_by_machine(data: AutofillRequest):
+    conn = get_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT DISTINCT o.operator_name || ' (' || o.identify_id || ')' AS fullname
+        FROM licenses l
+        JOIN operators o ON l.operator_id = o.operator_id
+        JOIN computers c ON l.computer_id = c.computer_id
+        WHERE c.computer_guid = %s AND c.computer_mac_address = %s
+          AND l.license_status = 'valid'
+    """, (data.computer_guid, data.computer_mac_address))
+
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+
+    if not rows:
+        raise HTTPException(status_code=404, detail="No operators found for this machine.")
+
+    result = "\n".join([r[0] for r in rows])
+    return result
