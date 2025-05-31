@@ -124,6 +124,16 @@ class SoftwareButtonCreate(BaseModel):
 class SoftwareButton(SoftwareButtonCreate):
     button_id: int
 
+class LicenseCheckRequest(BaseModel):
+    company_name: str
+    company_number: str
+    company_phone_number: str
+    company_email: str
+    company_address: str
+    computer_guid: str
+    computer_mac_address: str
+
+
 
 # === GENERIC DB HELPERS ===
 def fetch_all(table: str):
@@ -376,3 +386,72 @@ def update_software_button(button: SoftwareButton):
 @app.delete("/softwares_buttons/{button_id}")
 def delete_software_button(button_id: int):
     delete("softwares_buttons", button_id, "button_id")
+
+
+@app.post("/licenses/check")
+def check_license(data: LicenseCheckRequest):
+    conn = get_connection()
+    cur = conn.cursor()
+
+    # Step 1: Find the company
+    cur.execute("""
+        SELECT company_id FROM companies
+        WHERE company_name = %s AND company_number = %s AND
+              company_phone_number = %s AND company_email = %s AND
+              company_address = %s
+    """, (
+        data.company_name,
+        data.company_number,
+        data.company_phone_number,
+        data.company_email,
+        data.company_address
+    ))
+    company_row = cur.fetchone()
+    if not company_row:
+        raise HTTPException(status_code=404, detail="Company not found")
+    company_id = company_row[0]
+
+    # Step 2: Find the computer
+    cur.execute("""
+        SELECT computer_id FROM computers
+        WHERE computer_guid = %s AND computer_mac_address = %s
+    """, (data.computer_guid, data.computer_mac_address))
+    computer_row = cur.fetchone()
+    if not computer_row:
+        raise HTTPException(status_code=404, detail="Computer not found")
+    computer_id = computer_row[0]
+
+    # Step 3: Find valid licenses
+    cur.execute("""
+        SELECT s.software_id, s.software_name, s.price
+        FROM licenses l
+        JOIN softwares s ON l.software_id = s.software_id
+        WHERE l.company_id = %s AND l.computer_id = %s AND l.license_status = 'valid'
+    """, (company_id, computer_id))
+    softwares = cur.fetchall()
+    if not softwares:
+        raise HTTPException(status_code=403, detail="No valid license found")
+
+    software_list = []
+    for s_id, s_name, s_price in softwares:
+        # Fetch buttons for each software
+        cur.execute("""
+            SELECT button_id, button_name
+            FROM softwares_buttons
+            WHERE software_id = %s
+        """, (s_id,))
+        buttons = cur.fetchall()
+        software_list.append({
+            "software_id": s_id,
+            "software_name": s_name,
+            "price": float(s_price),
+            "buttons": [{"button_id": b_id, "button_name": b_name} for b_id, b_name in buttons]
+        })
+
+    cur.close()
+    conn.close()
+
+    return {
+        "status": "valid",
+        "softwares": software_list
+    }
