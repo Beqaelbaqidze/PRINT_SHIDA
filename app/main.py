@@ -531,19 +531,25 @@ def autofill_license_info(data: AutofillRequest):
     }
 
 from fastapi.responses import PlainTextResponse
+
 @app.get("/api/operators/by-machine", response_class=PlainTextResponse)
 def get_operators_by_machine_get(machine_name: str, mac_address: str):
     conn = get_connection()
     cur = conn.cursor()
 
     cur.execute("""
-        SELECT DISTINCT o.operator_name || ' (' || o.identify_id || ')' AS fullname
-        FROM licenses l
-        JOIN operators o ON l.operator_id = o.operator_id
-        JOIN computers c ON l.computer_id = c.computer_id
-        WHERE c.computer_guid = %s AND c.computer_mac_address = %s
-          AND l.license_status = 'valid'
-    """, (machine_name, mac_address))
+    SELECT DISTINCT o.operator_name || ' (' || o.identify_id || ')' AS fullname
+    FROM licenses l
+    JOIN operators o ON l.operator_id = o.operator_id
+    WHERE l.computer_id = (
+        SELECT computer_id FROM computers
+        WHERE TRIM(LOWER(computer_guid)) = TRIM(LOWER(%s))
+          AND TRIM(LOWER(computer_mac_address)) = TRIM(LOWER(%s))
+        LIMIT 1
+    )
+    AND l.license_status = 'valid'
+""", (machine_name, mac_address))
+
 
     rows = cur.fetchall()
     cur.close()
