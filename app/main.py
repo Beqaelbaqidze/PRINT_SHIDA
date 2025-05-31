@@ -530,8 +530,9 @@ def autofill_license_info(data: AutofillRequest):
         "operator_fullname": f"{row[5]} ({row[6]})"
     }
 
-@app.post("/api/operators/by-machine", response_class=HTMLResponse)
-def get_operators_by_machine(data: AutofillRequest):
+from fastapi.responses import PlainTextResponse
+@app.get("/api/operators/by-machine", response_class=PlainTextResponse)
+def get_operators_by_machine_get(machine_name: str, mac_address: str):
     conn = get_connection()
     cur = conn.cursor()
 
@@ -542,7 +543,7 @@ def get_operators_by_machine(data: AutofillRequest):
         JOIN computers c ON l.computer_id = c.computer_id
         WHERE c.computer_guid = %s AND c.computer_mac_address = %s
           AND l.license_status = 'valid'
-    """, (data.computer_guid, data.computer_mac_address))
+    """, (machine_name, mac_address))
 
     rows = cur.fetchall()
     cur.close()
