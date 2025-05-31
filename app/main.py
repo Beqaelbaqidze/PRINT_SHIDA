@@ -493,44 +493,39 @@ def check_license(data: LicenseCheckRequest):
     }
 
 
-# Response model
-class AutofillResponse(BaseModel):
-    company_name: str
-    company_number: str
-    operator_fullname: str
-    company_phone_number: str
-    company_email: str
-    company_address: str
+class AutofillRequest(BaseModel):
+    computer_guid: str
+    computer_mac_address: str
 
-@app.get("/api/license/autofill", response_model=AutofillResponse)
-def autofill_license(machine_guid: str = Query(...), mac_address: str = Query(...)):
+@app.post("/licenses/autofill")
+def autofill_license_info(data: AutofillRequest):
     conn = get_connection()
-    cur = conn.cursor(cursor_factory=RealDictCursor)
+    cur = conn.cursor()
 
     cur.execute("""
-        SELECT c.company_name, c.company_number, o.operator_name, c.company_phone_number,
-               c.company_email, c.company_address
+        SELECT c.company_name, c.company_number, c.company_phone_number,
+               c.company_email, c.company_address, o.operator_name, o.identify_id
         FROM licenses l
         JOIN companies c ON l.company_id = c.company_id
-        JOIN operators o ON l.operator_id = o.operator_id
         JOIN computers m ON l.computer_id = m.computer_id
+        JOIN operators o ON l.operator_id = o.operator_id
         WHERE m.computer_guid = %s AND m.computer_mac_address = %s
-        AND l.license_status = 'valid'
+          AND l.license_status = 'valid'
         LIMIT 1
-    """, (machine_guid, mac_address))
-    
-    result = cur.fetchone()
+    """, (data.computer_guid, data.computer_mac_address))
+
+    row = cur.fetchone()
     cur.close()
     conn.close()
 
-    if not result:
-        raise HTTPException(status_code=404, detail="No valid license found for machine.")
+    if not row:
+        raise HTTPException(status_code=404, detail="No valid license found for this computer.")
 
     return {
-        "company_name": result["company_name"],
-        "company_number": result["company_number"],
-        "operator_fullname": f'{result["operator_name"]} ({result["company_number"]})',
-        "company_phone_number": result["company_phone_number"],
-        "company_email": result["company_email"],
-        "company_address": result["company_address"]
+        "company_name": row[0],
+        "company_number": row[1],
+        "company_phone_number": row[2],
+        "company_email": row[3],
+        "company_address": row[4],
+        "operator_fullname": f"{row[5]} ({row[6]})"
     }
