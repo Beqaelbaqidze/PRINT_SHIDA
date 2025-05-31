@@ -388,31 +388,33 @@ def update_software_button(button: SoftwareButton):
 def delete_software_button(button_id: int):
     delete("softwares_buttons", button_id, "button_id")
 
+from fastapi import HTTPException
+from pydantic import BaseModel
+import re
+
+class LicenseCheckRequest(BaseModel):
+    company_name: str
+    company_number: str
+    company_phone_number: str
+    company_email: str
+    company_address: str
+    computer_guid: str
+    computer_mac_address: str
+    operator_fullname: str  # Example: "John Smith (010110008513)"
 
 @app.post("/licenses/check")
 def check_license(data: LicenseCheckRequest):
     conn = get_connection()
     cur = conn.cursor()
 
-    # === Step 0: Parse operator_fullname ===
-    import re
-    match = re.match(r"^(.*?)\s*\((\d+)\)$", data.operator_fullname.strip())
+    # Extract operator name and identify ID
+    match = re.match(r"^(.*)\s+\((\d+)\)$", data.operator_fullname.strip())
     if not match:
-        raise HTTPException(status_code=400, detail="Invalid operator format. Use 'Name (ID)'")
-
+        raise HTTPException(status_code=400, detail="Invalid operator format. Expected: 'Name (ID)'")
     operator_name = match.group(1).strip()
-    operator_identify_id = int(match.group(2).strip())
+    identify_id = match.group(2).strip()
 
-    # === Step 0.1: Validate operator ===
-    cur.execute("""
-        SELECT operator_id FROM operators
-        WHERE operator_name = %s AND identify_id = %s
-    """, (operator_name, operator_identify_id))
-    operator_row = cur.fetchone()
-    if not operator_row:
-        raise HTTPException(status_code=403, detail="Operator not authorized")
-
-    # === Step 1: Find the company ===
+    # Step 1: Find company
     cur.execute("""
         SELECT company_id FROM companies
         WHERE company_name = %s AND company_number = %s AND
@@ -430,7 +432,7 @@ def check_license(data: LicenseCheckRequest):
         raise HTTPException(status_code=404, detail="Company not found")
     company_id = company_row[0]
 
-    # === Step 2: Find the computer ===
+    # Step 2: Find computer
     cur.execute("""
         SELECT computer_id FROM computers
         WHERE computer_guid = %s AND computer_mac_address = %s
@@ -440,31 +442,45 @@ def check_license(data: LicenseCheckRequest):
         raise HTTPException(status_code=404, detail="Computer not found")
     computer_id = computer_row[0]
 
-    # === Step 3: Check valid licenses ===
+    # Step 3: Find operator
+    cur.execute("""
+        SELECT operator_id FROM operators
+        WHERE operator_name = %s AND identify_id::text = %s
+    """, (operator_name, identify_id))
+    operator_row = cur.fetchone()
+    if not operator_row:
+        raise HTTPException(status_code=404, detail="Operator not found")
+    operator_id = operator_row[0]
+
+    # Step 4: Find valid licenses
     cur.execute("""
         SELECT s.software_id, s.software_name, s.price
         FROM licenses l
         JOIN softwares s ON l.software_id = s.software_id
-        WHERE l.company_id = %s AND l.computer_id = %s AND l.license_status = 'valid'
-    """, (company_id, computer_id))
+        WHERE l.company_id = %s AND l.computer_id = %s AND
+              l.operator_id = %s AND l.license_status = 'valid'
+    """, (company_id, computer_id, operator_id))
     softwares = cur.fetchall()
     if not softwares:
-        raise HTTPException(status_code=403, detail="No valid license found")
+        raise HTTPException(status_code=403, detail="No valid license found for this setup")
 
+    # Step 5: Return software list with buttons
     software_list = []
     for s_id, s_name, s_price in softwares:
-        # === Fetch buttons ===
         cur.execute("""
             SELECT button_id, button_name
             FROM softwares_buttons
             WHERE software_id = %s
         """, (s_id,))
         buttons = cur.fetchall()
+
         software_list.append({
             "software_id": s_id,
             "software_name": s_name,
             "price": float(s_price),
-            "buttons": [{"button_id": b_id, "button_name": b_name} for b_id, b_name in buttons]
+            "buttons": [
+                {"button_id": b_id, "button_name": b_name} for b_id, b_name in buttons
+            ]
         })
 
     cur.close()
@@ -472,9 +488,5 @@ def check_license(data: LicenseCheckRequest):
 
     return {
         "status": "valid",
-        "operator": {
-            "name": operator_name,
-            "identify_id": operator_identify_id
-        },
         "softwares": software_list
     }
