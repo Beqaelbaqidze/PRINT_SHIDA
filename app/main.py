@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Query, HTTPException
+from fastapi import FastAPI, Query, HTTPException, Request
 from pydantic import BaseModel
 from dotenv import load_dotenv
 import os
@@ -406,6 +406,11 @@ class LicenseCheckRequest(BaseModel):
 
 @app.post("/licenses/check")
 def check_license(data: LicenseCheckRequest):
+    log_request_to_db(
+        endpoint=str(Request.url.path),
+        method=Request.method,
+        body=data.dict()
+    )
     conn = get_connection()
     cur = conn.cursor()
 
@@ -497,6 +502,17 @@ def check_license(data: LicenseCheckRequest):
 class AutofillRequest(BaseModel):
     computer_guid: str
     computer_mac_address: str
+
+def log_request_to_db(endpoint: str, method: str, body: dict):
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        INSERT INTO log (endpoint, method, request_body)
+        VALUES (%s, %s, %s)
+    """, (endpoint, method, json.dumps(body)))
+    conn.commit()
+    cur.close()
+    conn.close()
 
 @app.post("/licenses/autofill")
 def autofill_license_info(data: AutofillRequest):
