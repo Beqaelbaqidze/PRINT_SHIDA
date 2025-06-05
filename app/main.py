@@ -407,8 +407,8 @@ class LicenseCheckRequest(BaseModel):
 @app.post("/licenses/check")
 def check_license(data: LicenseCheckRequest):
     log_request_to_db(
-        endpoint=str(Request.url.path),
-        method=Request.method,
+        endpoint=str(request.url.path),
+        method=request.method,
         body=data.dict()
     )
     conn = get_connection()
