@@ -1,78 +1,134 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
+    <meta charset="UTF-8">
     <title>Admin Dashboard</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jsgrid@1.5.3/dist/jsgrid.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jsgrid@1.5.3/dist/jsgrid-theme.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <style>
         body {
-            font-family: Arial, sans-serif;
-            background: #f9f9f9;
-            padding: 40px;
+            font-family: 'Inter', sans-serif;
+            background: #f4f6f8;
+            margin: 0;
+            padding: 0;
         }
 
-        h1 {
-            margin-bottom: 30px;
+        header {
+            position: sticky;
+            top: 0;
+            background: #2d3748;
+            color: white;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            z-index: 10;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+
+        .logout-button {
+            background: #e53e3e;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .logout-button:hover {
+            background: #c53030;
+        }
+
+        .container {
+            padding: 40px;
+            max-width: 1400px;
+            margin: 0 auto;
         }
 
         h2 {
-            margin-top: 60px;
+            margin-top: 40px;
+            font-size: 20px;
+            color: #2d3748;
         }
 
         .grid-container {
             background: white;
-            padding: 20px;
+            padding: 24px;
             margin-bottom: 40px;
-            border-radius: 8px;
-            box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.05);
         }
 
+        .jsgrid-header-cell,
         .jsgrid-cell {
             font-size: 14px;
+            padding: 8px;
+        }
+
+        .jsgrid-header-row {
+            background-color: #edf2f7;
+        }
+
+        .jsgrid-alt-row {
+            background-color: #f7fafc;
         }
     </style>
 </head>
 
 <body>
+    <header>
+        <h1>Admin Dashboard</h1>
+        <button class="logout-button" onclick="logout()">Logout</button>
+    </header>
 
-    <h1>Admin Dashboard</h1>
+    <div class="container">
+        <div class="grid-container">
+            <h2>Companies</h2>
+            <div id="companiesGrid"></div>
+        </div>
 
-    <div class="grid-container">
-        <h2>Companies</h2>
-        <div id="companiesGrid"></div>
+        <div class="grid-container">
+            <h2>Operators</h2>
+            <div id="operatorsGrid"></div>
+        </div>
+
+        <div class="grid-container">
+            <h2>Computers</h2>
+            <div id="computersGrid"></div>
+        </div>
+
+        <div class="grid-container">
+            <h2>Softwares</h2>
+            <div id="softwaresGrid"></div>
+        </div>
+
+        <div class="grid-container">
+            <h2>Software Buttons</h2>
+            <div id="softwaresButtonsGrid"></div>
+        </div>
+
+        <div class="grid-container">
+            <h2>Licenses</h2>
+            <div id="licensesGrid"></div>
+        </div>
     </div>
 
-    <div class="grid-container">
-        <h2>Operators</h2>
-        <div id="operatorsGrid"></div>
-    </div>
-
-    <div class="grid-container">
-        <h2>Computers</h2>
-        <div id="computersGrid"></div>
-    </div>
-
-    <div class="grid-container">
-        <h2>Softwares</h2>
-        <div id="softwaresGrid"></div>
-    </div>
-
-    <div class="grid-container">
-    <h2>Software Buttons</h2>
-    <div id="softwaresButtonsGrid"></div>
-</div>
-
-
-    <div class="grid-container">
-        <h2>Licenses</h2>
-        <div id="licensesGrid"></div>
-    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.4/dist/jquery.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsgrid@1.5.3/dist/jsgrid.min.js"></script>
 
     <script>
+        function logout() {
+            window.location.href = "/logout";
+        }
         function createGrid(id, url, createUrl, updateUrl, deleteUrl, fields) {
             $("#" + id).jsGrid({
                 width: "100%",
