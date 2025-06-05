@@ -9,6 +9,7 @@ from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse
 from fastapi import Request
 from fastapi.middleware.cors import CORSMiddleware
+import json
 from starlette.middleware.sessions import SessionMiddleware
 from fastapi.responses import RedirectResponse
 from fastapi import Form
@@ -405,7 +406,7 @@ class LicenseCheckRequest(BaseModel):
     operator_fullname: str  # Example: "John Smith (010110008513)"
 
 @app.post("/licenses/check")
-def check_license(data: LicenseCheckRequest):
+def check_license(request: Request, data: LicenseCheckRequest):
     log_request_to_db(
         endpoint=str(request.url.path),
         method=request.method,
