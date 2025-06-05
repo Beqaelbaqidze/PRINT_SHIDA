@@ -134,6 +134,8 @@ class LicenseCheckRequest(BaseModel):
     computer_guid: str
     computer_mac_address: str
     operator_fullname: str
+    button_id: Optional[int] = None  # ✅ Add this
+
 
 
 
@@ -193,6 +195,7 @@ def filter_by(table: str, column: str, value: str):
     cur.close()
     conn.close()
     return [dict(zip(columns, row)) for row in rows]
+
 # === FILTER ENDPOINTS ===
 @app.get("/companies/filter/{company_name}")
 def filter_companies(company_name: str):
@@ -475,6 +478,15 @@ def check_license(data: LicenseCheckRequest):
         """, (s_id,))
         buttons = cur.fetchall()
 
+        # ✅ LOG IF button_id was clicked
+        if data.button_id:
+            for b_id, _ in buttons:
+                if b_id == data.button_id:
+                    cur.execute("""
+                        INSERT INTO software_button_logs (software_id, button_id, company_id, operator_id, computer_id)
+                        VALUES (%s, %s, %s, %s, %s)
+                    """, (s_id, b_id, company_id, operator_id, computer_id))
+
         software_list.append({
             "software_id": s_id,
             "software_name": s_name,
@@ -484,6 +496,7 @@ def check_license(data: LicenseCheckRequest):
             ]
         })
 
+    conn.commit()
     cur.close()
     conn.close()
 
@@ -491,6 +504,17 @@ def check_license(data: LicenseCheckRequest):
         "status": "valid",
         "softwares": software_list
     }
+
+
+@app.get("/logs/software-buttons")
+def get_software_button_logs():
+    conn = get_connection()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    cur.execute("SELECT * FROM software_button_logs ORDER BY clicked_at DESC")
+    logs = cur.fetchall()
+    cur.close()
+    conn.close()
+    return logs
 
 
 class AutofillRequest(BaseModel):
