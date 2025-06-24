@@ -570,7 +570,7 @@ def autofill_license_info(request: Request, data: AutofillRequest):
 
 
 from fastapi.responses import PlainTextResponse
-
+#commit
 @app.get("/api/operators/by-machine", response_class=PlainTextResponse)
 def get_operators_by_machine_get(machine_name: str, mac_address: str):
     conn = get_connection()
@@ -598,3 +598,4 @@ def get_operators_by_machine_get(machine_name: str, mac_address: str):
 
     result = "\n".join([r[0] for r in rows])
     return result
+
