@@ -405,13 +405,10 @@ class LicenseCheckRequest(BaseModel):
     computer_mac_address: str
     operator_fullname: str  # Example: "John Smith (010110008513)"
 
+
+
 @app.post("/licenses/check")
 def check_license(request: Request, data: LicenseCheckRequest):
-    log_request_to_db(
-        endpoint=str(request.url.path),
-        method=request.method,
-        body=data.dict()
-    )
     conn = get_connection()
     cur = conn.cursor()
 
@@ -494,29 +491,42 @@ def check_license(request: Request, data: LicenseCheckRequest):
     cur.close()
     conn.close()
 
-    return {
+    # Prepare response
+    response = {
         "status": "valid",
         "softwares": software_list
     }
+
+    # Log request and response
+    log_request_to_db(
+        endpoint=str(request.url.path),
+        method=request.method,
+        request_body=data.dict(),
+        response_body=response
+    )
+
+    return response
+
 
 
 class AutofillRequest(BaseModel):
     computer_guid: str
     computer_mac_address: str
 
-def log_request_to_db(endpoint: str, method: str, body: dict):
+def log_request_to_db(endpoint: str, method: str, request_body: dict, response_body: dict):
     conn = get_connection()
     cur = conn.cursor()
     cur.execute("""
-        INSERT INTO log (endpoint, method, request_body)
-        VALUES (%s, %s, %s)
-    """, (endpoint, method, json.dumps(body)))
+        INSERT INTO log (endpoint, method, request_body, response_body)
+        VALUES (%s, %s, %s, %s)
+    """, (endpoint, method, json.dumps(request_body), json.dumps(response_body)))
     conn.commit()
     cur.close()
     conn.close()
 
+
 @app.post("/licenses/autofill")
-def autofill_license_info(data: AutofillRequest):
+def autofill_license_info(request: Request, data: AutofillRequest):
     conn = get_connection()
     cur = conn.cursor()
 
@@ -539,7 +549,7 @@ def autofill_license_info(data: AutofillRequest):
     if not row:
         raise HTTPException(status_code=404, detail="No valid license found for this computer.")
 
-    return {
+    response = {
         "company_name": row[0],
         "company_number": row[1],
         "company_phone_number": row[2],
@@ -547,6 +557,16 @@ def autofill_license_info(data: AutofillRequest):
         "company_address": row[4],
         "operator_fullname": f"{row[5]} ({row[6]})"
     }
+
+    log_request_to_db(
+        endpoint=str(request.url.path),
+        method=request.method,
+        request_body=data.dict(),
+        response_body=response
+    )
+
+    return response
+
 
 from fastapi.responses import PlainTextResponse
 
