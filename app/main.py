@@ -404,7 +404,8 @@ class LicenseCheckRequest(BaseModel):
     computer_guid: str
     computer_mac_address: str
     operator_fullname: str  # Example: "John Smith (010110008513)"
-    button_clicked: Optional[str] = None  # Optional field for button click
+    identify_count: Optional[int] = None  # Optional field for identify count
+    button_clicked: Optional[str] = None  # Optional field for button clicked
 
 
 
