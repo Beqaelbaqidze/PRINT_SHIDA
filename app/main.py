@@ -529,7 +529,7 @@ def log_request_to_db(endpoint: str, method: str, request_body: dict, response_b
 
 
 @app.post("/licenses/autofill")
-def autofill_license_info(request: Request, data: AutofillRequest):
+def autofill_license_info(data: AutofillRequest):
     conn = get_connection()
     cur = conn.cursor()
 
@@ -552,7 +552,7 @@ def autofill_license_info(request: Request, data: AutofillRequest):
     if not row:
         raise HTTPException(status_code=404, detail="No valid license found for this computer.")
 
-    response = {
+    return {
         "company_name": row[0],
         "company_number": row[1],
         "company_phone_number": row[2],
@@ -561,17 +561,9 @@ def autofill_license_info(request: Request, data: AutofillRequest):
         "operator_fullname": f"{row[5]} ({row[6]})"
     }
 
-    log_request_to_db(
-        endpoint=str(request.url.path),
-        method=request.method,
-        request_body=data.dict(),
-        response_body=response
-    )
-
-    return response
-
-
 from fastapi.responses import PlainTextResponse
+
+
 #commit
 @app.get("/api/operators/by-machine", response_class=PlainTextResponse)
 def get_operators_by_machine_get(machine_name: str, mac_address: str):
