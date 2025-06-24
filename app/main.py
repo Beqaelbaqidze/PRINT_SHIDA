@@ -545,22 +545,32 @@ def autofill_license_info(data: AutofillRequest):
         LIMIT 1
     """, (data.computer_guid, data.computer_mac_address))
 
-    row = cur.fetchone()
+    rows = cur.fetchall()
     cur.close()
     conn.close()
 
-    if not row:
+    if not rows:
         raise HTTPException(status_code=404, detail="No valid license found for this computer.")
 
-    return {
-        "company_name": row[0],
-        "company_number": row[1],
-        "company_phone_number": row[2],
-        "company_email": row[3],
-        "company_address": row[4],
-        "operator_fullname": f"{row[5]} ({row[6]})"
-    }
+    results = []
+    seen = set()  # To avoid duplicates for same company/operator
 
+    for row in rows:
+        key = (row[0], row[5], row[6])  # (company_name, operator_name, identify_id)
+        if key in seen:
+            continue
+        seen.add(key)
+
+        results.append({
+            "company_name": row[0],
+            "company_number": row[1],
+            "company_phone_number": row[2],
+            "company_email": row[3],
+            "company_address": row[4],
+            "operator_fullname": f"{row[5]} ({row[6]})"
+    })
+
+    return results
 from fastapi.responses import PlainTextResponse
 
 
