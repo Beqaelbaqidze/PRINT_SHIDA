@@ -525,6 +525,7 @@ def log_request_to_db(endpoint: str, method: str, request_body: dict, response_b
     conn.close()
 
 
+
 @app.post("/licenses/autofill")
 def autofill_license_info(request: Request, data: AutofillRequest):
     conn = get_connection()
