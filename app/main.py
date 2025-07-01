@@ -414,6 +414,16 @@ def check_license(request: Request, data: LicenseCheckRequest):
     conn = get_connection()
     cur = conn.cursor()
 
+        # === Auto-expire any outdated licenses ===
+    today = date.today()
+    cur.execute("""
+        UPDATE licenses
+        SET license_status = 'invalid', status = 'inactive'
+        WHERE expire_date < %s AND license_status = 'valid'
+    """, (today,))
+    conn.commit()
+
+
     # Extract operator name and identify ID
     match = re.match(r"^(.*)\s+\((\d+)\)$", data.operator_fullname.strip())
     if not match:
