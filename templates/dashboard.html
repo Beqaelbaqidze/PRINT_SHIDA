@@ -1,319 +1,3 @@
-<!-- <!DOCTYPE html>
-<html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <title>Admin Dashboard</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jsgrid@1.5.3/dist/jsgrid.min.css" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jsgrid@1.5.3/dist/jsgrid-theme.min.css" />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background: #f4f6f8;
-            margin: 0;
-            padding: 0;
-        }
-
-        header {
-            position: sticky;
-            top: 0;
-            background: #2d3748;
-            color: white;
-            padding: 20px 40px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            z-index: 10;
-        }
-
-        header h1 {
-            margin: 0;
-            font-size: 24px;
-        }
-
-        .logout-button {
-            background: #e53e3e;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 600;
-        }
-
-        .logout-button:hover {
-            background: #c53030;
-        }
-
-        .container {
-            padding: 40px;
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
-        h2 {
-            margin-top: 40px;
-            font-size: 20px;
-            color: #2d3748;
-        }
-
-        .grid-container {
-            background: white;
-            padding: 24px;
-            margin-bottom: 40px;
-            border-radius: 12px;
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.05);
-        }
-
-        .jsgrid-header-cell,
-        .jsgrid-cell {
-            font-size: 14px;
-            padding: 8px;
-        }
-
-        .jsgrid-header-row {
-            background-color: #edf2f7;
-        }
-
-        .jsgrid-alt-row {
-            background-color: #f7fafc;
-        }
-    </style>
-</head>
-
-<body>
-    <header>
-        <h1>Admin Dashboard</h1>
-        <button class="logout-button" onclick="logout()">Logout</button>
-    </header>
-
-    <div class="container">
-        <div class="grid-container">
-            <h2>Companies</h2>
-            <div id="companiesGrid"></div>
-        </div>
-
-        <div class="grid-container">
-            <h2>Operators</h2>
-            <div id="operatorsGrid"></div>
-        </div>
-
-        <div class="grid-container">
-            <h2>Computers</h2>
-            <div id="computersGrid"></div>
-        </div>
-
-        <div class="grid-container">
-            <h2>Softwares</h2>
-            <div id="softwaresGrid"></div>
-        </div>
-
-        <div class="grid-container">
-            <h2>Software Buttons</h2>
-            <div id="softwaresButtonsGrid"></div>
-        </div>
-
-        <div class="grid-container">
-            <h2>Licenses</h2>
-            <div id="licensesGrid"></div>
-        </div>
-    </div>
-
-
-    <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.4/dist/jquery.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jsgrid@1.5.3/dist/jsgrid.min.js"></script>
-
-    <script>
-        function logout() {
-            window.location.href = "/logout";
-        }
-        function createGrid(id, url, createUrl, updateUrl, deleteUrl, fields) {
-            $("#" + id).jsGrid({
-                width: "100%",
-                height: "auto",
-                editing: true,
-                inserting: true,
-                sorting: true,
-                paging: true,
-                autoload: true,
-                pageSize: 10,
-                controller: {
-                    loadData: () => fetch(url).then(res => res.json()),
-                    insertItem: (item) => fetch(createUrl, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify(item)
-                    }).then(res => res.json())
-                        .then(() => $("#" + id).jsGrid("loadData")),
-                    updateItem: (item) => fetch(updateUrl, {
-                        method: "PUT",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify(item)
-                    }).then(res => res.json())
-                        .then(() => $("#" + id).jsGrid("loadData")),
-                    deleteItem: (item) => fetch(`${deleteUrl}/${item[fields[0].name]}`, {
-                        method: "DELETE"
-                    })
-                        .then(() => $("#" + id).jsGrid("loadData"))
-                },
-                fields: [...fields, { type: "control" }]
-            });
-        }
-
-        function loadAllGrids() {
-            createGrid("companiesGrid", "/companies", "/companies/create", "/companies/update", "/companies", [
-                { name: "company_id", type: "number", width: 30, editing: false },
-                { name: "company_name", type: "text", width: 100 },
-                { name: "company_number", type: "text", width: 60 },
-                { name: "company_director", type: "text", width: 100 },
-                { name: "company_phone_number", type: "text", width: 100 },
-                { name: "company_email", type: "text", width: 120 },
-                { name: "company_address", type: "text", width: 120 }
-            ]);
-
-            createGrid("operatorsGrid", "/operators", "/operators/create", "/operators/update", "/operators", [
-                { name: "operator_id", type: "number", width: 30, editing: false },
-                { name: "operator_name", type: "text", width: 100 },
-                { name: "identify_id", type: "text", width: 100 }
-            ]);
-
-            createGrid("computersGrid", "/computers", "/computers/create", "/computers/update", "/computers", [
-                { name: "computer_id", type: "number", width: 30, editing: false },
-                { name: "computer_guid", type: "text", width: 150 },
-                { name: "computer_mac_address", type: "text", width: 150 }
-            ]);
-
-            createGrid("softwaresGrid", "/softwares", "/softwares/create", "/softwares/update", "/softwares", [
-                { name: "software_id", type: "number", width: 30, editing: false },
-                { name: "software_name", type: "text", width: 100 },
-                { name: "price", type: "number", width: 60 }
-            ]);
-        }
-
-        let companies = [], operators = [], computers = [], softwares = [];
-        async function loadSoftwareButtonsGrid() {
-    softwares = await fetch("/softwares").then(r => r.json());
-
-    createGrid("softwaresButtonsGrid", "/softwares_buttons", "/softwares_buttons/create", "/softwares_buttons/update", "/softwares_buttons", [
-        { name: "button_id", type: "number", width: 30, editing: false },
-        { name: "software_id", type: "select", title: "Software", items: softwares, valueField: "software_id", textField: "software_name", width: 120 },
-        { name: "button_name", type: "text", width: 120 }
-    ]);
-}
-
-
-        async function loadLicenseFKsAndCreateGrid() {
-            [companies, operators, computers, softwares] = await Promise.all([
-                fetch("/companies").then(r => r.json()),
-                fetch("/operators").then(r => r.json()),
-                fetch("/computers").then(r => r.json()),
-                fetch("/softwares").then(r => r.json())
-            ]);
-
-            $("#licensesGrid").jsGrid({
-                width: "100%",
-                height: "auto",
-                editing: true,
-                inserting: true,
-                sorting: true,
-                paging: true,
-                autoload: true,
-                pageSize: 10,
-                controller: {
-                    loadData: () => fetch("/licenses").then(res => res.json()),
-                    insertItem: (item) => {
-                        const today = new Date().toISOString().split("T")[0];
-                        const isValid = item.expire_date >= today;
-
-                        // Auto update license status and stayed
-                        const selectedSoftware = softwares.find(s => s.software_id === item.software_id);
-                        const price = selectedSoftware ? selectedSoftware.price : 0;
-                        item.stayed = price - (item.paid || 0);
-                        item.status = isValid ? item.status : "inactive";
-                        item.license_status = (item.status === "active" && isValid) ? "valid" : "invalid";
-
-                        return fetch("/licenses/create", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify(item)
-                        }).then(res => res.json())
-                            .then(() => $("#licensesGrid").jsGrid("loadData"));
-                    },
-                    updateItem: (item) => {
-                        const today = new Date().toISOString().split("T")[0];
-                        const isValidDate = item.expire_date >= today;
-
-                        const selectedSoftware = softwares.find(s => s.software_id === item.software_id);
-                        const price = selectedSoftware ? selectedSoftware.price : 0;
-                        item.stayed = price - (item.paid || 0);
-                        if (!isValidDate) item.status = "inactive";
-                        item.license_status = (item.status === "active" && isValidDate) ? "valid" : "invalid";
-
-                        return fetch("/licenses/update", {
-                            method: "PUT",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify(item)
-                        }).then(res => res.json())
-                            .then(() => $("#licensesGrid").jsGrid("loadData"));
-                    },
-
-                    deleteItem: (item) => {
-                        fetch(`/licenses/${item.license_id}`, { method: "DELETE" })
-                            .then(() => $("#licensesGrid").jsGrid("loadData"));
-                    },
-
-                },
-                fields: [
-                    { name: "license_id", type: "number", width: 30, editing: false },
-                    { name: "company_id", type: "select", title: "Company", items: companies, valueField: "company_id", textField: "company_name", width: 100 },
-                    { name: "operator_id", type: "select", title: "Operator", items: operators, valueField: "operator_id", textField: "operator_name", width: 100 },
-                    { name: "computer_id", type: "select", title: "Computer", items: computers, valueField: "computer_id", textField: "computer_guid", width: 120 },
-                    { name: "software_id", type: "select", title: "Software", items: softwares, valueField: "software_id", textField: "software_name", width: 100 },
-                    {
-                        name: "expire_date", type: "text", width: 100, align: "center",
-                        itemTemplate: value => new Date(value).toLocaleDateString(),
-                        insertTemplate: function () {
-                            this._insertInput = $("<input>").attr("type", "date");
-                            return this._insertInput;
-                        },
-                        editTemplate: function (value) {
-                            this._editInput = $("<input>").attr("type", "date").val(value);
-                            return this._editInput;
-                        },
-                        insertValue: function () { return this._insertInput.val(); },
-                        editValue: function () { return this._editInput.val(); }
-                    },
-                    {
-                        name: "status", type: "select", width: 80,
-                        items: [
-                            { Name: "active", Id: "active" },
-                            { Name: "inactive", Id: "inactive" }
-                        ],
-                        valueField: "Id",
-                        textField: "Name"
-                    },
-                    { name: "paid", type: "number", width: 60 },
-                    { name: "stayed", type: "number", width: 60 },
-                    {
-                        name: "license_status", type: "text", width: 80, editing: false,
-                        itemTemplate: value => $("<span>").text(value === "valid" ? "✅ Valid" : "❌ Invalid")
-                    },
-                    { type: "control" }
-                ]
-            });
-        }
-
-        loadAllGrids();
-        loadLicenseFKsAndCreateGrid();
-        loadSoftwareButtonsGrid();
-    </script>
-
-</body>
-
-</html> -->
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1031,7 +715,20 @@
     <script>
         // Configuration
         const API_BASE_URL = 'http://164.92.170.36:5502'; // Change this to your backend URL
-
+        
+        // Add connection test function
+        async function testConnection() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/companies`);
+                console.log('Connection test:', response.status);
+                return response.ok;
+            } catch (error) {
+                console.error('Connection test failed:', error);
+                showAlert('Cannot connect to server. Please check if the backend is running on http://localhost:8000', 'error');
+                return false;
+            }
+        }
+        
         // Global variables
         let currentEditId = null;
         let currentEditType = null;
@@ -1043,8 +740,14 @@
         let buttonsData = [];
 
         // Initialize the application
-        document.addEventListener('DOMContentLoaded', function() {
-            loadAllData();
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Test connection first
+            const isConnected = await testConnection();
+            if (isConnected) {
+                loadAllData();
+            } else {
+                showAlert('Backend server is not running. Please start your FastAPI server first.', 'error');
+            }
             setupEventListeners();
         });
 
@@ -1082,7 +785,7 @@
             // Add active class to selected tab
             event.target.classList.add('active');
 
-            // Load data for the panel if needed
+            // Load data for the panel if needed - ensure base data is loaded first
             if (panelName === 'companies' && companiesData.length === 0) {
                 loadCompanies();
             } else if (panelName === 'operators' && operatorsData.length === 0) {
@@ -1091,29 +794,42 @@
                 loadComputers();
             } else if (panelName === 'software' && softwareData.length === 0) {
                 loadSoftware();
-            } else if (panelName === 'licenses' && licenseData.length === 0) {
-                loadLicenses();
-            } else if (panelName === 'buttons' && buttonsData.length === 0) {
-                loadButtons();
+            } else if (panelName === 'licenses') {
+                // Always refresh licenses to ensure relationships are correct
+                if (companiesData.length > 0 && operatorsData.length > 0 && computersData.length > 0 && softwareData.length > 0) {
+                    if (licenseData.length === 0) loadLicenses();
+                } else {
+                    // Load base data first, then licenses
+                    loadAllData();
+                }
+            } else if (panelName === 'buttons') {
+                // Always refresh buttons to ensure relationships are correct
+                if (softwareData.length > 0) {
+                    if (buttonsData.length === 0) loadButtons();
+                } else {
+                    loadSoftware().then(() => loadButtons());
+                }
             }
         }
 
         // Modal functions
-        function openModal(modalId) {
+        function openModal(modalId, isEdit = false) {
             const modal = document.getElementById(modalId);
             modal.classList.add('active');
 
-            // Reset form and edit state
-            const form = modal.querySelector('form');
-            if (form) form.reset();
-            currentEditId = null;
-            currentEditType = null;
+            // Reset form and edit state only if not editing
+            if (!isEdit) {
+                const form = modal.querySelector('form');
+                if (form) form.reset();
+                currentEditId = null;
+                currentEditType = null;
 
-            // Update modal title
-            const title = modal.querySelector('h3');
-            if (title) {
-                const entityName = modalId.replace('-modal', '');
-                title.textContent = `Add ${entityName.charAt(0).toUpperCase() + entityName.slice(1)}`;
+                // Update modal title
+                const title = modal.querySelector('h3');
+                if (title) {
+                    const entityName = modalId.replace('-modal', '');
+                    title.textContent = `Add ${entityName.charAt(0).toUpperCase() + entityName.slice(1)}`;
+                }
             }
 
             // Load dropdown options if needed
@@ -1174,19 +890,25 @@
             }
         }
 
-        // Load all data on initialization
+        // Load all data on initialization with proper sequencing
         async function loadAllData() {
             try {
+                // Load base data first
                 await Promise.all([
                     loadCompanies(),
                     loadOperators(),
                     loadComputers(),
-                    loadSoftware(),
+                    loadSoftware()
+                ]);
+                
+                // Load dependent data after base data is loaded
+                await Promise.all([
                     loadLicenses(),
                     loadButtons()
                 ]);
             } catch (error) {
                 showAlert('Failed to load initial data', 'error');
+                console.error('Loading error:', error);
             }
         }
 
@@ -1248,7 +970,7 @@
                 }
                 
                 closeModal('company-modal');
-                loadCompanies();
+                await loadCompanies();
             } catch (error) {
                 showAlert('Failed to save company', 'error');
             }
@@ -1256,14 +978,17 @@
 
         function editCompany(id) {
             const company = companiesData.find(c => c.company_id === id);
-            if (!company) return;
+            if (!company) {
+                showAlert('Company not found', 'error');
+                return;
+            }
 
             currentEditId = id;
             currentEditType = 'company';
 
-            // Fill form
-            document.getElementById('company_name').value = company.company_name;
-            document.getElementById('company_number').value = company.company_number;
+            // Fill form with company data
+            document.getElementById('company_name').value = company.company_name || '';
+            document.getElementById('company_number').value = company.company_number || '';
             document.getElementById('company_director').value = company.company_director || '';
             document.getElementById('company_phone_number').value = company.company_phone_number || '';
             document.getElementById('company_email').value = company.company_email || '';
@@ -1271,7 +996,9 @@
 
             // Update modal title
             document.getElementById('company-modal-title').textContent = 'Edit Company';
-            openModal('company-modal');
+            
+            // Open modal as edit mode
+            openModal('company-modal', true);
         }
 
         async function deleteCompany(id) {
@@ -1340,7 +1067,7 @@
                 }
                 
                 closeModal('operator-modal');
-                loadOperators();
+                await loadOperators();
             } catch (error) {
                 showAlert('Failed to save operator', 'error');
             }
@@ -1348,16 +1075,23 @@
 
         function editOperator(id) {
             const operator = operatorsData.find(o => o.operator_id === id);
-            if (!operator) return;
+            if (!operator) {
+                showAlert('Operator not found', 'error');
+                return;
+            }
 
             currentEditId = id;
             currentEditType = 'operator';
 
-            document.getElementById('operator_name').value = operator.operator_name;
-            document.getElementById('identify_id').value = operator.identify_id;
+            // Fill form with operator data
+            document.getElementById('operator_name').value = operator.operator_name || '';
+            document.getElementById('identify_id').value = operator.identify_id || '';
 
+            // Update modal title
             document.getElementById('operator-modal-title').textContent = 'Edit Operator';
-            openModal('operator-modal');
+            
+            // Open modal as edit mode
+            openModal('operator-modal', true);
         }
 
         async function deleteOperator(id) {
@@ -1426,7 +1160,7 @@
                 }
                 
                 closeModal('computer-modal');
-                loadComputers();
+                await loadComputers();
             } catch (error) {
                 showAlert('Failed to save computer', 'error');
             }
@@ -1434,16 +1168,23 @@
 
         function editComputer(id) {
             const computer = computersData.find(c => c.computer_id === id);
-            if (!computer) return;
+            if (!computer) {
+                showAlert('Computer not found', 'error');
+                return;
+            }
 
             currentEditId = id;
             currentEditType = 'computer';
 
-            document.getElementById('computer_guid').value = computer.computer_guid;
+            // Fill form with computer data
+            document.getElementById('computer_guid').value = computer.computer_guid || '';
             document.getElementById('computer_mac_address').value = computer.computer_mac_address || '';
 
+            // Update modal title
             document.getElementById('computer-modal-title').textContent = 'Edit Computer';
-            openModal('computer-modal');
+            
+            // Open modal as edit mode
+            openModal('computer-modal', true);
         }
 
         async function deleteComputer(id) {
@@ -1494,6 +1235,9 @@
             e.preventDefault();
             const formData = new FormData(e.target);
             const data = Object.fromEntries(formData.entries());
+            
+            // Convert price to float
+            data.price = parseFloat(data.price) || 0;
 
             try {
                 if (currentEditId && currentEditType === 'software') {
@@ -1512,7 +1256,7 @@
                 }
                 
                 closeModal('software-modal');
-                loadSoftware();
+                await loadSoftware();
             } catch (error) {
                 showAlert('Failed to save software', 'error');
             }
@@ -1520,16 +1264,23 @@
 
         function editSoftware(id) {
             const software = softwareData.find(s => s.software_id === id);
-            if (!software) return;
+            if (!software) {
+                showAlert('Software not found', 'error');
+                return;
+            }
 
             currentEditId = id;
             currentEditType = 'software';
 
-            document.getElementById('software_name').value = software.software_name;
-            document.getElementById('price').value = software.price;
+            // Fill form with software data
+            document.getElementById('software_name').value = software.software_name || '';
+            document.getElementById('price').value = parseFloat(software.price) || 0;
 
+            // Update modal title
             document.getElementById('software-modal-title').textContent = 'Edit Software';
-            openModal('software-modal');
+            
+            // Open modal as edit mode
+            openModal('software-modal', true);
         }
 
         async function deleteSoftware(id) {
@@ -1589,33 +1340,40 @@
         }
 
         async function loadLicenseDropdowns() {
-            // Load companies
-            const companySelect = document.getElementById('license_company_id');
-            companySelect.innerHTML = '<option value="">Select Company</option>';
-            companiesData.forEach(company => {
-                companySelect.innerHTML += `<option value="${company.company_id}">${company.company_name}</option>`;
-            });
+            try {
+                // Load companies
+                const companySelect = document.getElementById('license_company_id');
+                companySelect.innerHTML = '<option value="">Select Company</option>';
+                companiesData.forEach(company => {
+                    companySelect.innerHTML += `<option value="${company.company_id}">${company.company_name}</option>`;
+                });
 
-            // Load operators
-            const operatorSelect = document.getElementById('license_operator_id');
-            operatorSelect.innerHTML = '<option value="">Select Operator</option>';
-            operatorsData.forEach(operator => {
-                operatorSelect.innerHTML += `<option value="${operator.operator_id}">${operator.operator_name}</option>`;
-            });
+                // Load operators
+                const operatorSelect = document.getElementById('license_operator_id');
+                operatorSelect.innerHTML = '<option value="">Select Operator</option>';
+                operatorsData.forEach(operator => {
+                    operatorSelect.innerHTML += `<option value="${operator.operator_id}">${operator.operator_name}</option>`;
+                });
 
-            // Load computers
-            const computerSelect = document.getElementById('license_computer_id');
-            computerSelect.innerHTML = '<option value="">Select Computer</option>';
-            computersData.forEach(computer => {
-                computerSelect.innerHTML += `<option value="${computer.computer_id}">${computer.computer_guid}</option>`;
-            });
+                // Load computers
+                const computerSelect = document.getElementById('license_computer_id');
+                computerSelect.innerHTML = '<option value="">Select Computer</option>';
+                computersData.forEach(computer => {
+                    computerSelect.innerHTML += `<option value="${computer.computer_id}">${computer.computer_guid}</option>`;
+                });
 
-            // Load software
-            const softwareSelect = document.getElementById('license_software_id');
-            softwareSelect.innerHTML = '<option value="">Select Software</option>';
-            softwareData.forEach(software => {
-                softwareSelect.innerHTML += `<option value="${software.software_id}">${software.software_name}</option>`;
-            });
+                // Load software
+                const softwareSelect = document.getElementById('license_software_id');
+                softwareSelect.innerHTML = '<option value="">Select Software</option>';
+                softwareData.forEach(software => {
+                    softwareSelect.innerHTML += `<option value="${software.software_id}">${software.software_name}</option>`;
+                });
+
+                return Promise.resolve();
+            } catch (error) {
+                console.error('Error loading license dropdowns:', error);
+                return Promise.reject(error);
+            }
         }
 
         async function handleLicenseSubmit(e) {
@@ -1647,7 +1405,7 @@
                 }
                 
                 closeModal('license-modal');
-                loadLicenses();
+                await loadLicenses();
             } catch (error) {
                 showAlert('Failed to save license', 'error');
             }
@@ -1655,22 +1413,43 @@
 
         function editLicense(id) {
             const license = licenseData.find(l => l.license_id === id);
-            if (!license) return;
+            if (!license) {
+                showAlert('License not found', 'error');
+                return;
+            }
 
             currentEditId = id;
             currentEditType = 'license';
 
-            document.getElementById('license_company_id').value = license.company_id;
-            document.getElementById('license_operator_id').value = license.operator_id;
-            document.getElementById('license_computer_id').value = license.computer_id;
-            document.getElementById('license_software_id').value = license.software_id;
-            document.getElementById('expire_date').value = license.expire_date;
-            document.getElementById('paid').value = license.paid || 0;
-            document.getElementById('status').value = license.status;
-
+            // Update modal title first
             document.getElementById('license-modal-title').textContent = 'Edit License';
-            loadLicenseDropdowns();
-            openModal('license-modal');
+            
+            // Load dropdowns and then populate form
+            loadLicenseDropdowns().then(() => {
+                // Use setTimeout to ensure dropdowns are rendered
+                setTimeout(() => {
+                    // Fill form with license data
+                    const companySelect = document.getElementById('license_company_id');
+                    const operatorSelect = document.getElementById('license_operator_id');
+                    const computerSelect = document.getElementById('license_computer_id');
+                    const softwareSelect = document.getElementById('license_software_id');
+                    
+                    if (companySelect) companySelect.value = license.company_id || '';
+                    if (operatorSelect) operatorSelect.value = license.operator_id || '';
+                    if (computerSelect) computerSelect.value = license.computer_id || '';
+                    if (softwareSelect) softwareSelect.value = license.software_id || '';
+                    
+                    document.getElementById('expire_date').value = license.expire_date || '';
+                    document.getElementById('paid').value = parseFloat(license.paid) || 0;
+                    document.getElementById('status').value = license.status || 'active';
+                }, 100);
+                
+                // Open modal as edit mode
+                openModal('license-modal', true);
+            }).catch(error => {
+                console.error('Error loading license dropdowns:', error);
+                showAlert('Failed to load dropdown options', 'error');
+            });
         }
 
         async function deleteLicense(id) {
@@ -1708,7 +1487,7 @@
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td>${button.button_id}</td>
-                    <td>${software ? software.software_name : 'Unknown'}</td>
+                    <td>${software ? software.software_name : `ID: ${button.software_id}`}</td>
                     <td>${button.button_name}</td>
                     <td class="actions">
                         <button class="btn btn-warning btn-sm" onclick="editButton(${button.button_id})">Edit</button>
@@ -1720,11 +1499,17 @@
         }
 
         async function loadButtonDropdowns() {
-            const softwareSelect = document.getElementById('button_software_id');
-            softwareSelect.innerHTML = '<option value="">Select Software</option>';
-            softwareData.forEach(software => {
-                softwareSelect.innerHTML += `<option value="${software.software_id}">${software.software_name}</option>`;
-            });
+            try {
+                const softwareSelect = document.getElementById('button_software_id');
+                softwareSelect.innerHTML = '<option value="">Select Software</option>';
+                softwareData.forEach(software => {
+                    softwareSelect.innerHTML += `<option value="${software.software_id}">${software.software_name}</option>`;
+                });
+                return Promise.resolve();
+            } catch (error) {
+                console.error('Error loading button dropdowns:', error);
+                return Promise.reject(error);
+            }
         }
 
         async function handleButtonSubmit(e) {
@@ -1751,7 +1536,7 @@
                 }
                 
                 closeModal('button-modal');
-                loadButtons();
+                await loadButtons();
             } catch (error) {
                 showAlert('Failed to save button', 'error');
             }
@@ -1759,17 +1544,33 @@
 
         function editButton(id) {
             const button = buttonsData.find(b => b.button_id === id);
-            if (!button) return;
+            if (!button) {
+                showAlert('Button not found', 'error');
+                return;
+            }
 
             currentEditId = id;
             currentEditType = 'button';
 
-            document.getElementById('button_software_id').value = button.software_id;
-            document.getElementById('button_name').value = button.button_name;
-
+            // Update modal title first
             document.getElementById('button-modal-title').textContent = 'Edit Button';
-            loadButtonDropdowns();
-            openModal('button-modal');
+
+            // Load dropdowns and then populate form
+            loadButtonDropdowns().then(() => {
+                // Use setTimeout to ensure dropdowns are rendered
+                setTimeout(() => {
+                    // Fill form with button data
+                    const softwareSelect = document.getElementById('button_software_id');
+                    if (softwareSelect) softwareSelect.value = button.software_id || '';
+                    document.getElementById('button_name').value = button.button_name || '';
+                }, 100);
+                
+                // Open modal as edit mode
+                openModal('button-modal', true);
+            }).catch(error => {
+                console.error('Error loading button dropdowns:', error);
+                showAlert('Failed to load dropdown options', 'error');
+            });
         }
 
         async function deleteButton(id) {
