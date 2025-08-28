@@ -598,7 +598,6 @@ def get_operators_by_machine_get(machine_name: str, mac_address: str):
             SELECT computer_id FROM computers
             WHERE TRIM(LOWER(computer_guid)) = TRIM(LOWER(%s))
               AND TRIM(LOWER(computer_mac_address)) = TRIM(LOWER(%s))
-            LIMIT 1
         )
         AND LOWER(l.license_status) = 'valid'
     """, (machine_name.strip().lower(), mac_address.strip().lower()))
